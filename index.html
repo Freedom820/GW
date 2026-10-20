@@ -407,6 +407,51 @@ tbody tr:last-child td { border-bottom: none; }
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* 文档预览内容样式 */
+.doc-content h1, .doc-content h2, .doc-content h3 {
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.doc-content h1 { font-size: 20px; }
+.doc-content h2 { font-size: 17px; }
+.doc-content h3 { font-size: 15px; }
+.doc-content p {
+  margin-bottom: 10px;
+  line-height: 1.8;
+}
+.doc-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.doc-content table td, .doc-content table th {
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  text-align: left;
+}
+.doc-content table th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+.doc-content ul, .doc-content ol {
+  padding-left: 24px;
+  margin-bottom: 10px;
+}
+.doc-content li {
+  margin-bottom: 6px;
+  line-height: 1.7;
+}
+.doc-content strong {
+  font-weight: 600;
+}
+.doc-content img {
+  max-width: 100%;
+  height: auto;
+}
 </style>
 </head>
 <body>
@@ -2163,18 +2208,21 @@ async function handleFileUpload(input, targetTextareaId) {
   const file = input.files[0];
   if (!file) return;
   showProgress('正在读取文件...');
+  let text = '';
+  let isHtml = false;
   try {
     const ext = file.name.split('.').pop().toLowerCase();
-    let text = '';
 
     if (['txt', 'md', 'csv', 'json'].includes(ext)) {
       // 纯文本格式直接读取
       text = await file.text();
+      isHtml = false;
     } else if (ext === 'docx') {
-      // docx 用 mammoth 解析
+      // docx 用 mammoth 转成HTML，保留格式
       const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
+      const result = await mammoth.convertToHtml({ arrayBuffer });
       text = result.value;
+      isHtml = true;
     } else if (ext === 'pdf') {
       // pdf 用 pdf.js 动态加载
       if (typeof pdfjsLib === 'undefined') {
@@ -2205,18 +2253,24 @@ async function handleFileUpload(input, targetTextareaId) {
     // 填充隐藏的原始文本存储
     document.getElementById(targetTextareaId).value = text;
 
-    // 渲染到文档预览区：把换行转成段落
+    // 渲染到文档预览区
     const previewId = targetTextareaId.replace('_text', '_preview');
     const previewEl = document.getElementById(previewId);
     if (previewEl) {
-      const html = text.split('\n').map(line => {
-        if (!line.trim()) return '<div style="height:12px"></div>';
-        // 简单识别标题行（数字开头的标题）
-        if (/^\d+\.\s/.test(line.trim()) || /^第\d+[章节]/.test(line.trim())) {
-          return `<div style="font-weight:600;margin-top:16px;margin-bottom:8px">${line}</div>`;
-        }
-        return `<div>${line}</div>`;
-      }).join('');
+      let html = '';
+      if (isHtml) {
+        // docx 转的HTML直接渲染
+        html = `<div class="doc-content">${text}</div>`;
+      } else {
+        // 纯文本按换行分段
+        html = text.split('\n').map(line => {
+          if (!line.trim()) return '<div style="height:12px"></div>';
+          if (/^\d+\.\s/.test(line.trim()) || /^第\d+[章节]/.test(line.trim())) {
+            return `<div style="font-weight:600;margin-top:16px;margin-bottom:8px">${line}</div>`;
+          }
+          return `<div>${line}</div>`;
+        }).join('');
+      }
       previewEl.innerHTML = html;
     }
 
