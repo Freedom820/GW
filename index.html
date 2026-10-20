@@ -608,6 +608,51 @@ tbody tr:last-child td {
   backdrop-filter: blur(4px);
 }
 
+/* 弹窗 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  animation: modalIn .2s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(-20px) scale(.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal-header {
+  padding: 20px 24px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.modal-body {
+  padding: 20px 24px;
+}
+.modal-footer {
+  padding: 0 24px 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 /* 空状态 */
 .empty-state svg {
   opacity: 0.2;
@@ -786,6 +831,9 @@ tbody tr:last-child td {
         <div class="user-name" id="userName">admin</div>
         <div class="user-role" id="userRole">管理员</div>
       </div>
+      <button class="logout-btn" onclick="showChangePasswordModal()" title="修改密码">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </button>
       <button class="logout-btn" onclick="doLogout()" title="退出登录">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
       </button>
@@ -866,6 +914,12 @@ async function doLogin() {
       return;
     }
     const user = users;
+    // 检查是否被禁用
+    if (user.status === 'disabled') {
+      err.textContent = '该账号已被禁用，请联系管理员';
+      document.getElementById('loginPass').value = '';
+      return;
+    }
     currentUser = user;
     sessionStorage.setItem('lens_current_user', JSON.stringify(user));
     err.textContent = '';
@@ -878,6 +932,8 @@ async function doLogin() {
     if (user.role === 'admin') {
       addUserManagementNav();
     }
+    // 应用菜单权限
+    applyPermissions();
     initApp();
   } catch (e) {
     console.error('登录失败:', e);
@@ -919,6 +975,58 @@ function toggleNavSection(titleEl) {
   if (items && items.classList.contains('nav-section-items')) {
     items.classList.toggle('collapsed');
   }
+}
+
+// 菜单权限控制
+function applyPermissions() {
+  if (!currentUser) return;
+  const perms = currentUser.permissions || 'all';
+  if (perms === 'all') return; // 全部权限，不隐藏
+  const allowed = JSON.parse(perms);
+  // 隐藏不允许的菜单项
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const view = item.getAttribute('data-view');
+    if (view && !allowed.includes(view)) {
+      item.style.display = 'none';
+    }
+  });
+}
+
+// 通用自定义确认弹窗
+function showConfirm(title, message, onConfirm) {
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.id = 'confirmModal';
+  mask.innerHTML = `
+    <div class="modal" style="width:400px">
+      <div class="modal-header">
+        <div style="font-size:16px;font-weight:600">${title}</div>
+        <button class="modal-close" onclick="closeModal('confirmModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-secondary);line-height:1.6">${message}</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('confirmModal')">取消</button>
+        <button class="btn btn-danger" id="confirmOkBtn">确定</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+  document.getElementById('confirmOkBtn').onclick = function() {
+    closeModal('confirmModal');
+    onConfirm();
+  };
+}
+
+// 登录时检查用户是否被禁用
+async function checkUserDisabled(user) {
+  if (user.status === 'disabled') {
+    alert('该账号已被禁用，请联系管理员');
+    doLogout();
+    return true;
+  }
+  return false;
 }
 
 // 修改密码
@@ -1601,18 +1709,19 @@ function editBug(id) {
 }
 
 async function deleteBug(id) {
-  if (!confirm('确定删除这条问题记录吗？附件也会一并删除。')) return;
-  const bug = await dbGet('bugs', id);
-  if (bug && bug.attachmentIds) {
-    for (const aid of bug.attachmentIds) {
-      try { await dbDelete('attachments', aid); } catch(e) {}
+  showConfirm('删除缺陷', '确定删除这条问题记录吗？附件也会一并删除。', async () => {
+    const bug = await dbGet('bugs', id);
+    if (bug && bug.attachmentIds) {
+      for (const aid of bug.attachmentIds) {
+        try { await dbDelete('attachments', aid); } catch(e) {}
+      }
     }
-  }
-  await dbDelete('bugs', id);
-  await loadBugs();
-  toast('已删除');
-  if (currentView === 'detail') switchView('list');
-  else renderTable();
+    await dbDelete('bugs', id);
+    await loadBugs();
+    toast('已删除');
+    if (currentView === 'detail') switchView('list');
+    else renderTable();
+  });
 }
 
 // ==================== 详情视图 ====================
@@ -2083,11 +2192,12 @@ function editTestCase(id) {
 }
 
 async function deleteTestCase(id) {
-  if (!confirm('确定删除这条测试用例吗？')) return;
-  await dbDelete('testcases', id);
-  await loadTestCases();
-  toast('已删除');
-  switchView('testcases');
+  showConfirm('删除测试用例', '确定删除这条测试用例吗？', async () => {
+    await dbDelete('testcases', id);
+    await loadTestCases();
+    toast('已删除');
+    switchView('testcases');
+  });
 }
 
 // ==================== 固件规格书模块 ====================
@@ -2319,11 +2429,12 @@ function editFirmware(id) {
 }
 
 async function deleteFirmware(id) {
-  if (!confirm('确定删除这条固件版本记录吗？')) return;
-  await dbDelete('firmware', id);
-  await loadFirmware();
-  toast('已删除');
-  switchView('firmware');
+  showConfirm('删除固件版本', '确定删除这条固件版本记录吗？', async () => {
+    await dbDelete('firmware', id);
+    await loadFirmware();
+    toast('已删除');
+    switchView('firmware');
+  });
 }
 
 // ==================== 功能规格书模块 ====================
@@ -2654,11 +2765,12 @@ function editFeatureSpec(id) {
 }
 
 async function deleteFeatureSpec(id) {
-  if (!confirm('确定删除这条功能规格书吗？')) return;
-  await dbDelete('featurespec', id);
-  await loadFeatureSpecs();
-  toast('已删除');
-  switchView('featurespec');
+  showConfirm('删除功能规格书', '确定删除这条功能规格书吗？', async () => {
+    await dbDelete('featurespec', id);
+    await loadFeatureSpecs();
+    toast('已删除');
+    switchView('featurespec');
+  });
 }
 
 // ==================== UI 走查模块 ====================
@@ -2818,11 +2930,12 @@ function editUIReview(id) {
 }
 
 async function deleteUIReview(id) {
-  if (!confirm('确定删除这条UI走查记录吗？')) return;
-  await dbDelete('uireview', id);
-  await loadUIReviews();
-  toast('已删除');
-  switchView('uireview');
+  showConfirm('删除UI走查', '确定删除这条UI走查记录吗？', async () => {
+    await dbDelete('uireview', id);
+    await loadUIReviews();
+    toast('已删除');
+    switchView('uireview');
+  });
 }
 
 // ==================== 测试脚本 / 工程模块 ====================
@@ -2980,11 +3093,12 @@ function editScript(id) {
 }
 
 async function deleteScript(id) {
-  if (!confirm('确定删除这条脚本记录吗？')) return;
-  await dbDelete('scripts', id);
-  await loadScripts();
-  toast('已删除');
-  switchView('scripts');
+  showConfirm('删除脚本', '确定删除这条脚本记录吗？', async () => {
+    await dbDelete('scripts', id);
+    await loadScripts();
+    toast('已删除');
+    switchView('scripts');
+  });
 }
 
 function copyText(text) {
@@ -3377,23 +3491,27 @@ async function renderUserMgmtView() {
       <div class="table-wrap">
         <table>
           <colgroup>
-            <col style="width:120px"><col style="width:120px"><col style="width:100px">
-            <col style="width:180px"><col style="width:120px"><col style="width:120px">
+            <col style="width:100px"><col style="width:100px"><col style="width:80px">
+            <col style="width:100px"><col style="width:80px"><col style="width:160px">
           </colgroup>
           <thead><tr>
-            <th>账号</th><th>姓名</th><th>角色</th><th>创建时间</th><th>状态</th><th>操作</th>
+            <th>账号</th><th>姓名</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th>
           </tr></thead>
           <tbody>
-            ${currentUsers.map((u, i) => `
+            ${currentUsers.map((u) => `
               <tr>
                 <td style="font-weight:600">${escapeHtml(u.username)}</td>
                 <td>${escapeHtml(u.name)}</td>
                 <td><span class="badge ${(ROLE_MAP[u.role] || {}).cls || 'badge-type-other'}">${(ROLE_MAP[u.role] || {}).label || u.role}</span></td>
+                <td>${u.status === 'disabled' ? '<span class="badge badge-danger" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca">已禁用</span>' : '<span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">已启用</span>'}</td>
                 <td style="color:var(--text-secondary)">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</td>
-                <td>${u.username === currentUser.username ? '<span class="badge badge-status-new">当前登录</span>' : '<span class="badge badge-status-closed">已启用</span>'}</td>
                 <td>
                   <button class="btn btn-sm btn-secondary" onclick="resetUserPassword(${u.id})">重置密码</button>
-                  ${u.username !== currentUser.username ? `<button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">删除</button>` : ''}
+                  <button class="btn btn-sm btn-secondary" onclick="showPermissionModal(${u.id})">权限</button>
+                  ${u.username !== currentUser.username ? `
+                    <button class="btn btn-sm ${u.status === 'disabled' ? 'btn-success' : 'btn-warning'}" onclick="toggleUserStatus(${u.id})">${u.status === 'disabled' ? '启用' : '禁用'}</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">删除</button>
+                  ` : ''}
                 </td>
               </tr>
             `).join('')}
@@ -3481,7 +3599,7 @@ async function doAddUser() {
 async function resetUserPassword(userId) {
   const user = currentUsers.find(u => u.id === userId);
   if (!user) return;
-  if (confirm(`确定重置用户「${user.name}」的密码为 123456 吗？`)) {
+  showConfirm('重置密码', `确定重置用户「${user.name}」的密码为 123456 吗？`, async () => {
     try {
       const { error } = await sb
         .from('users')
@@ -3492,13 +3610,13 @@ async function resetUserPassword(userId) {
     } catch (e) {
       toast('重置失败: ' + e.message, 'error');
     }
-  }
+  });
 }
 
 async function deleteUser(userId) {
   const user = currentUsers.find(u => u.id === userId);
   if (!user) return;
-  if (confirm(`确定删除用户「${user.name}」吗？此操作不可恢复。`)) {
+  showConfirm('删除用户', `确定删除用户「${user.name}」吗？此操作不可恢复。`, async () => {
     try {
       const { error } = await sb
         .from('users')
@@ -3510,6 +3628,163 @@ async function deleteUser(userId) {
     } catch (e) {
       toast('删除失败: ' + e.message, 'error');
     }
+  });
+}
+
+// 启用/禁用用户
+async function toggleUserStatus(userId) {
+  const user = currentUsers.find(u => u.id === userId);
+  if (!user) return;
+  const newStatus = user.status === 'disabled' ? 'active' : 'disabled';
+  const action = newStatus === 'disabled' ? '禁用' : '启用';
+  showConfirm(`${action}用户`, `确定${action}用户「${user.name}」吗？`, async () => {
+    try {
+      const { error } = await sb
+        .from('users')
+        .update({ status: newStatus })
+        .eq('id', userId);
+      if (error) throw error;
+      toast(newStatus === 'disabled' ? '用户已禁用' : '用户已启用');
+      renderUserMgmtView();
+    } catch (e) {
+      toast('操作失败: ' + e.message, 'error');
+    }
+  });
+}
+
+// 权限设置弹窗
+function showPermissionModal(userId) {
+  const user = currentUsers.find(u => u.id === userId);
+  if (!user) return;
+  const perms = user.permissions === 'all' ? [] : JSON.parse(user.permissions || '[]');
+  const allMenus = [
+    { key: 'stats', label: '统计概览' },
+    { key: 'featurespec', label: '功能规格书' },
+    { key: 'firmware', label: '固件规格书' },
+    { key: 'testcases', label: '测试用例' },
+    { key: 'list', label: '缺陷列表' },
+    { key: 'uireview', label: 'UI走查' },
+    { key: 'compat', label: '系统适配' },
+    { key: 'scripts', label: '测试脚本' },
+    { key: 'aiassistant', label: '效率工具' }
+  ];
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.id = 'permissionModal';
+  mask.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <div style="font-size:16px;font-weight:600">设置权限 - ${escapeHtml(user.name)}</div>
+        <button class="modal-close" onclick="closeModal('permissionModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom:16px;padding:12px;background:#f8fafc;border-radius:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="perm_all" ${user.permissions === 'all' ? 'checked' : ''}>
+            <span style="font-weight:600">全部权限</span>
+          </label>
+        </div>
+        <div id="perm_list" style="${user.permissions === 'all' ? 'opacity:.4;pointer-events:none' : ''}">
+          ${allMenus.map(m => `
+            <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer">
+              <input type="checkbox" class="perm-item" value="${m.key}" ${perms.includes(m.key) ? 'checked' : ''}>
+              <span>${m.label}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('permissionModal')">取消</button>
+        <button class="btn btn-primary" onclick="savePermissions(${userId})">保存</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+  document.getElementById('perm_all').onchange = function() {
+    document.getElementById('perm_list').style.opacity = this.checked ? '.4' : '1';
+    document.getElementById('perm_list').style.pointerEvents = this.checked ? 'none' : 'auto';
+  };
+}
+
+async function savePermissions(userId) {
+  const isAll = document.getElementById('perm_all').checked;
+  const perms = [];
+  if (!isAll) {
+    document.querySelectorAll('.perm-item:checked').forEach(cb => perms.push(cb.value));
+  }
+  try {
+    const { error } = await sb
+      .from('users')
+      .update({ permissions: isAll ? 'all' : JSON.stringify(perms) })
+      .eq('id', userId);
+    if (error) throw error;
+    closeModal('permissionModal');
+    toast('权限已保存');
+  } catch (e) {
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
+// 用户修改密码
+function showChangePasswordModal() {
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.id = 'changePwdModal';
+  mask.innerHTML = `
+    <div class="modal" style="width:400px">
+      <div class="modal-header">
+        <div style="font-size:16px;font-weight:600">修改密码</div>
+        <button class="modal-close" onclick="closeModal('changePwdModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">原密码<span class="req">*</span></label>
+          <input class="form-input" id="cp_old" type="password" placeholder="请输入原密码">
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">新密码<span class="req">*</span></label>
+          <input class="form-input" id="cp_new" type="password" placeholder="至少6位">
+        </div>
+        <div class="form-group">
+          <label class="form-label">确认新密码<span class="req">*</span></label>
+          <input class="form-input" id="cp_confirm" type="password" placeholder="再次输入新密码">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('changePwdModal')">取消</button>
+        <button class="btn btn-primary" onclick="doChangePassword()">确认修改</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+}
+
+async function doChangePassword() {
+  const oldPwd = document.getElementById('cp_old').value;
+  const newPwd = document.getElementById('cp_new').value;
+  const confirmPwd = document.getElementById('cp_confirm').value;
+  if (!oldPwd || !newPwd) { toast('请填写完整', 'error'); return; }
+  if (newPwd.length < 6) { toast('新密码至少6位', 'error'); return; }
+  if (newPwd !== confirmPwd) { toast('两次密码不一致', 'error'); return; }
+  try {
+    // 验证原密码
+    const { data: user } = await sb
+      .from('users')
+      .select('*')
+      .eq('id', currentUser.id)
+      .eq('password', oldPwd)
+      .single();
+    if (!user) { toast('原密码错误', 'error'); return; }
+    // 更新密码
+    const { error } = await sb
+      .from('users')
+      .update({ password: newPwd })
+      .eq('id', currentUser.id);
+    if (error) throw error;
+    closeModal('changePwdModal');
+    toast('密码修改成功');
+  } catch (e) {
+    toast('修改失败: ' + e.message, 'error');
   }
 }
 
@@ -3677,11 +3952,12 @@ function editCompat(id) {
 }
 
 async function deleteCompat(id) {
-  if (!confirm('确定删除这条适配记录吗？')) return;
-  await dbDelete('compat', id);
-  await loadCompat();
-  toast('已删除');
-  switchView('compat');
+  showConfirm('删除适配记录', '确定删除这条适配记录吗？', async () => {
+    await dbDelete('compat', id);
+    await loadCompat();
+    toast('已删除');
+    switchView('compat');
+  });
 }
 
 // ==================== 启动 ====================
@@ -3729,6 +4005,8 @@ if (checkLogin()) {
   if (currentUser.role === 'admin') {
     addUserManagementNav();
   }
+  // 应用菜单权限
+  applyPermissions();
   try {
     initApp();
   } catch (e) {
