@@ -790,11 +790,22 @@ function initDB() {
 // ==================== Supabase 云数据库配置 ====================
 const SUPABASE_URL = 'https://edzpritjurrnsgsnbqii.supabase.co';
 const SUPABASE_KEY = 'sb_publishable__EdPGX8Jjq1ToIrFWT8_XQ_q0OZHDLw';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let sb = null;
+try {
+  if (typeof window.supabase !== 'undefined') {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('Supabase 连接成功');
+  } else {
+    console.warn('Supabase SDK 未加载');
+  }
+} catch (e) {
+  console.error('Supabase 初始化失败:', e);
+}
 
 // 数据库操作统一封装（云数据库版）
 async function dbAdd(storeName, data) {
-  const { data: result, error } = await supabase
+  if (!sb) throw new Error('数据库未连接');
+  const { data: result, error } = await sb
     .from(storeName)
     .insert(data)
     .select()
@@ -803,7 +814,8 @@ async function dbAdd(storeName, data) {
   return result;
 }
 async function dbPut(storeName, data) {
-  const { data: result, error } = await supabase
+  if (!sb) throw new Error('数据库未连接');
+  const { data: result, error } = await sb
     .from(storeName)
     .upsert(data)
     .select()
@@ -812,7 +824,8 @@ async function dbPut(storeName, data) {
   return result;
 }
 async function dbGetAll(storeName) {
-  const { data, error } = await supabase
+  if (!sb) return [];
+  const { data, error } = await sb
     .from(storeName)
     .select('*')
     .order('id', { ascending: false });
@@ -820,7 +833,8 @@ async function dbGetAll(storeName) {
   return data || [];
 }
 async function dbGet(storeName, id) {
-  const { data, error } = await supabase
+  if (!sb) throw new Error('数据库未连接');
+  const { data, error } = await sb
     .from(storeName)
     .select('*')
     .eq('id', id)
@@ -829,7 +843,8 @@ async function dbGet(storeName, id) {
   return data;
 }
 async function dbDelete(storeName, id) {
-  const { error } = await supabase
+  if (!sb) throw new Error('数据库未连接');
+  const { error } = await sb
     .from(storeName)
     .delete()
     .eq('id', id);
@@ -3412,7 +3427,13 @@ function updateAllBadges() {
 // 启动时先检查登录
 if (checkLogin()) {
   document.getElementById('mainApp').style.display = 'flex';
-  initApp();
+  try {
+    initApp();
+  } catch (e) {
+    console.error('初始化失败:', e);
+    alert('数据加载失败: ' + e.message + '\n\n你仍然可以使用系统，只是数据暂时读不出来。');
+    switchView('stats');
+  }
 } else {
   showLogin();
 }
