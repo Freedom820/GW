@@ -1,0 +1,2810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>综合管理平台</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'><path d='M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z'/></svg>">
+<script src="https://fastly.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<style>
+/* ===== 基础重置 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --sidebar-bg: #0f172a;
+  --sidebar-text: #94a3b8;
+  --sidebar-active: rgba(37, 99, 235, 0.15);
+  --sidebar-active-text: #60a5fa;
+  --main-bg: #f8fafc;
+  --card-bg: #ffffff;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --accent: #2563eb;
+  --accent-light: #dbeafe;
+  --accent-hover: #1d4ed8;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --success: #16a34a;
+  --info: #0891b2;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+}
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-size: 14px; color: var(--text-primary); background: var(--main-bg); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+input, select, textarea { font-family: inherit; font-size: 14px; outline: none; }
+
+/* ===== 登录页 ===== */
+.login-page {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex;
+}
+/* 左侧品牌区 */
+.login-brand {
+  flex: 1; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+  display: flex; flex-direction: column; justify-content: center; padding: 60px;
+  position: relative; overflow: hidden;
+}
+.login-brand::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(59,130,246,.2) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(139,92,246,.15) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(14,165,233,.1) 0%, transparent 50%);
+}
+/* 浮动粒子 */
+.particle {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  animation: float 6s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: .3; }
+  50% { transform: translateY(-30px) translateX(10px); opacity: .6; }
+}
+.brand-content { position: relative; z-index: 1; }
+.brand-logo {
+  width: 64px; height: 64px; margin-bottom: 28px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 12px 24px rgba(59,130,246,.3);
+  animation: pulse 3s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 12px 24px rgba(59,130,246,.3); }
+  50% { box-shadow: 0 12px 32px rgba(59,130,246,.5); }
+}
+.brand-logo svg { width: 32px; height: 32px; color: #fff; }
+.brand-title {
+  font-size: 42px; font-weight: 800; color: #fff; line-height: 1.2;
+  margin-bottom: 16px; letter-spacing: -0.5px;
+}
+.brand-title span {
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.brand-desc {
+  font-size: 16px; color: rgba(255,255,255,.6); line-height: 1.8;
+  max-width: 420px; margin-bottom: 40px;
+}
+.brand-features { display: flex; flex-direction: column; gap: 14px; }
+.brand-feature {
+  display: flex; align-items: center; gap: 12px;
+  color: rgba(255,255,255,.7); font-size: 14px;
+}
+.brand-feature .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #3b82f6; box-shadow: 0 0 8px #3b82f6;
+}
+/* 右侧登录表单区 */
+.login-form-area {
+  width: 480px; min-width: 480px; background: #fff;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 60px 56px;
+}
+.login-form-title { font-size: 26px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+.login-form-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 36px; }
+.login-field { margin-bottom: 18px; }
+.login-field label { display: block; color: var(--text-primary); font-size: 13px; margin-bottom: 8px; font-weight: 500; }
+.login-input {
+  width: 100%; padding: 12px 14px; background: #f8fafc;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  color: var(--text-primary); font-size: 14px; transition: all .2s;
+}
+.login-input::placeholder { color: var(--text-muted); }
+.login-input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-light); }
+.login-btn {
+  width: 100%; padding: 13px; margin-top: 12px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff; border-radius: 8px; font-size: 15px; font-weight: 600;
+  transition: all .2s; box-shadow: 0 4px 12px rgba(59,130,246,.3);
+}
+.login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,.4); }
+.login-btn:active { transform: translateY(0); }
+.login-error { color: var(--danger); font-size: 13px; margin-top: 14px; min-height: 18px; text-align: center; }
+.login-footer { margin-top: 40px; text-align: center; font-size: 12px; color: var(--text-muted); }
+
+/* ===== 布局 ===== */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ===== 侧边栏 ===== */
+.sidebar {
+  width: 230px; min-width: 230px; background: var(--sidebar-bg);
+  display: flex; flex-direction: column; color: var(--sidebar-text);
+}
+.sidebar-logo {
+  padding: 20px 18px; font-size: 15px; font-weight: 700; color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,.06); display: flex; align-items: center; gap: 10px;
+}
+.sidebar-logo-icon {
+  width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sidebar-logo-icon svg { width: 18px; height: 18px; color: #fff; }
+.sidebar-nav { flex: 1; padding: 16px 10px; overflow-y: auto; }
+.nav-section-title {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: rgba(255,255,255,.3); padding: 0 12px; margin: 12px 0 6px; font-weight: 600;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: 8px; cursor: pointer; margin-bottom: 2px;
+  color: var(--sidebar-text); transition: all .15s; font-size: 13.5px; font-weight: 500;
+}
+.nav-item:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
+.nav-item.active { background: var(--sidebar-active); color: var(--sidebar-active-text); }
+.nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; background: rgba(255,255,255,.12); border-radius: 10px;
+  padding: 1px 8px; font-size: 11px; min-width: 20px; text-align: center; font-weight: 600;
+}
+.sidebar-user {
+  padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.06);
+  display: flex; align-items: center; gap: 10px;
+}
+.user-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; font-weight: 600; flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { color: #e2e8f0; font-size: 13px; font-weight: 500; }
+.user-role { color: rgba(255,255,255,.4); font-size: 11px; }
+.logout-btn {
+  background: none; color: rgba(255,255,255,.4); font-size: 16px;
+  padding: 4px 6px; border-radius: 4px; transition: all .15s;
+}
+.logout-btn:hover { color: #f87171; background: rgba(248,113,113,.1); }
+
+/* ===== 主内容区 ===== */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--main-bg); }
+.main-header {
+  background: var(--card-bg); border-bottom: 1px solid var(--border);
+  padding: 16px 28px; display: flex; align-items: center; justify-content: space-between;
+}
+.main-title { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.main-subtitle { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ===== 按钮 ===== */
+.btn {
+  padding: 8px 16px; border-radius: 7px; font-size: 13px; font-weight: 500;
+  transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgba(37,99,235,.2); }
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 2px 4px rgba(37,99,235,.3); }
+.btn-secondary { background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border-light); border-color: #cbd5e1; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 5px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ===== 内容滚动区 ===== */
+.content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+/* ===== 统计卡片 ===== */
+.stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--card-bg); border-radius: var(--radius); padding: 18px 20px;
+  box-shadow: var(--shadow); border: 1px solid var(--border-light);
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--accent);
+}
+.stat-card.severity-fatal::before { background: var(--danger); }
+.stat-card.severity-critical::before { background: #ea580c; }
+.stat-card.severity-normal::before { background: var(--warning); }
+.stat-card.severity-minor::before { background: var(--info); }
+.stat-card.severity-suggestion::before { background: var(--success); }
+.stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+
+/* ===== 筛选工具栏 ===== */
+.filter-bar {
+  background: var(--card-bg); border-radius: var(--radius); padding: 14px 16px;
+  margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  box-shadow: var(--shadow); border: 1px solid var(--border-light);
+}
+.filter-bar input[type="text"], .filter-bar select {
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px;
+  font-size: 13px; background: #fff; min-width: 130px; transition: all .15s;
+}
+.filter-bar input[type="text"] { flex: 1; min-width: 220px; }
+.filter-bar input[type="text"]:focus, .filter-bar select:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+/* ===== 表格 ===== */
+.table-wrap {
+  background: var(--card-bg); border-radius: var(--radius);
+  box-shadow: var(--shadow); border: 1px solid var(--border-light); overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+thead { background: #fafbfc; }
+th {
+  text-align: left; padding: 11px 14px; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); border-bottom: 1px solid var(--border);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-transform: uppercase; letter-spacing: .3px;
+}
+td {
+  padding: 12px 14px; border-bottom: 1px solid var(--border-light);
+  font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+tbody tr { cursor: pointer; transition: background .1s; }
+tbody tr:hover { background: #f8fafc; }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ===== 标签/徽章 ===== */
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 11.5px; font-weight: 500; white-space: nowrap;
+}
+.badge-fatal { background: #fef2f2; color: var(--danger); }
+.badge-critical { background: #fff7ed; color: #ea580c; }
+.badge-normal { background: #fffbeb; color: var(--warning); }
+.badge-minor { background: #ecfeff; color: var(--info); }
+.badge-suggestion { background: #f0fdf4; color: var(--success); }
+.badge-status-new { background: #eff6ff; color: var(--accent); }
+.badge-status-processing { background: #fef3c7; color: #b45309; }
+.badge-status-resolved { background: #dcfce7; color: #15803d; }
+.badge-status-closed { background: #f1f5f9; color: var(--text-secondary); }
+.badge-type-hardware { background: #f5f3ff; color: #7c3aed; }
+.badge-type-firmware { background: #fef3c7; color: #b45309; }
+.badge-type-app { background: #e0f2fe; color: #0369a1; }
+.badge-type-compat { background: #fce7f3; color: #be185d; }
+.badge-type-other { background: #f1f5f9; color: var(--text-secondary); }
+
+/* ===== 表单 ===== */
+.form-card { background: var(--card-bg); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); border: 1px solid var(--border-light); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.form-label .req { color: var(--danger); margin-left: 2px; }
+.form-input, .form-select, .form-textarea {
+  padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px;
+  font-size: 14px; background: #fff; transition: all .15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light);
+}
+.form-textarea { resize: vertical; min-height: 84px; line-height: 1.6; }
+.form-hint { font-size: 12px; color: var(--text-muted); }
+
+/* ===== 附件区 ===== */
+.attach-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 28px 20px; text-align: center; color: var(--text-secondary);
+  cursor: pointer; transition: all .15s; background: #fafbfc;
+}
+.attach-zone:hover { border-color: var(--accent); background: #f0f7ff; color: var(--accent); }
+.attach-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.attach-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  background: #f8fafc; border-radius: 7px; font-size: 13px; border: 1px solid var(--border-light);
+}
+.attach-item .icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.attach-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.attach-item .size { color: var(--text-muted); font-size: 12px; }
+.attach-item .remove { color: var(--danger); cursor: pointer; font-size: 18px; padding: 2px 8px; border-radius: 4px; transition: background .15s; }
+.attach-item .remove:hover { background: #fef2f2; }
+.compress-toggle { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-secondary); margin-top: 10px; cursor: pointer; }
+
+/* ===== 详情视图 ===== */
+.detail-section { margin-bottom: 24px; }
+.detail-section h3 {
+  font-size: 13px; font-weight: 600; margin-bottom: 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary); text-transform: uppercase; letter-spacing: .3px;
+}
+.detail-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; margin-bottom: 10px; font-size: 13.5px; }
+.detail-row .label { color: var(--text-muted); font-weight: 500; }
+.detail-row .value { color: var(--text-primary); white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
+
+/* ===== Toast ===== */
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+.toast {
+  padding: 12px 18px; border-radius: 8px; font-size: 13.5px; color: #fff;
+  box-shadow: var(--shadow-lg); animation: slideIn .25s ease; font-weight: 500;
+}
+.toast-success { background: var(--success); }
+.toast-error { background: var(--danger); }
+.toast-info { background: var(--accent); }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ===== 空状态 ===== */
+.empty-state { text-align: center; padding: 80px 20px; color: var(--text-muted); }
+.empty-state svg { width: 72px; height: 72px; margin-bottom: 16px; opacity: .3; }
+.empty-state p { font-size: 14px; }
+
+/* ===== 进度提示 ===== */
+.progress-overlay {
+  position: fixed; inset: 0; background: rgba(248,250,252,.85);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; z-index: 1500;
+}
+.progress-box {
+  background: #fff; border-radius: 12px; padding: 32px 44px;
+  box-shadow: var(--shadow-lg); text-align: center; min-width: 320px;
+}
+.progress-bar { height: 6px; background: var(--border-light); border-radius: 3px; margin-top: 16px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); border-radius: 3px; transition: width .3s; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  .sidebar { width: 64px; min-width: 64px; }
+  .sidebar-logo span, .nav-item span, .nav-badge, .user-info, .nav-section-title { display: none; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .form-grid { grid-template-columns: 1fr; }
+  .filter-bar input[type="text"], .filter-bar select,
+  .form-input, .form-select, .form-textarea,
+  .login-input { font-size: 16px; }
+  .content { padding: 16px; }
+  .main-header { padding: 14px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 登录页 ===== -->
+<div class="login-page" id="loginPage" style="display:none">
+  <!-- 左侧品牌区 -->
+  <div class="login-brand">
+    <div class="particle" style="width:80px;height:80px;top:15%;left:10%;animation-delay:0s"></div>
+    <div class="particle" style="width:40px;height:40px;top:60%;left:25%;animation-delay:1s"></div>
+    <div class="particle" style="width:60px;height:60px;top:30%;right:15%;animation-delay:2s"></div>
+    <div class="particle" style="width:30px;height:30px;bottom:20%;left:40%;animation-delay:3s"></div>
+    <div class="particle" style="width:100px;height:100px;bottom:10%;right:10%;animation-delay:1.5s"></div>
+    <div class="brand-content">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <div class="brand-title"><span>综合管理</span>平台</div>
+      <div class="brand-desc">一站式硬件、固件与 APP 交互测试管理平台，从需求文档到缺陷追踪，从用例编写到自动化脚本，全流程覆盖。</div>
+      <div class="brand-features">
+        <div class="brand-feature"><div class="dot"></div>缺陷追踪与分级管理</div>
+        <div class="brand-feature"><div class="dot"></div>测试用例与脚本管理</div>
+        <div class="brand-feature"><div class="dot"></div>固件 / 功能规格文档库</div>
+        <div class="brand-feature"><div class="dot"></div>UI 走查与效率工具集</div>
+      </div>
+    </div>
+  </div>
+  <!-- 右侧登录表单 -->
+  <div class="login-form-area">
+    <div class="login-form-title">欢迎回来</div>
+    <div class="login-form-sub">请登录您的账号以继续</div>
+    <div class="login-field">
+      <label>账号</label>
+      <input class="login-input" id="loginUser" type="text" placeholder="请输入账号" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>密码</label>
+      <input class="login-input" id="loginPass" type="password" placeholder="请输入密码" autocomplete="current-password">
+    </div>
+    <button class="login-btn" onclick="doLogin()">登 录</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-footer">综合管理平台 v1.0 · 本地部署 · 数据安全</div>
+  </div>
+</div>
+
+<!-- ===== 主应用 ===== -->
+<div class="app" id="mainApp" style="display:none">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <span>综合管理平台</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">工作台</div>
+      <div class="nav-item active" data-view="stats" onclick="switchView('stats')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+        <span>统计概览</span>
+      </div>
+      <div class="nav-section-title">需求文档</div>
+      <div class="nav-item" data-view="featurespec" onclick="switchView('featurespec')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        <span>功能规格书</span>
+        <span class="nav-badge" id="navCountFeatures">0</span>
+      </div>
+      <div class="nav-item" data-view="firmware" onclick="switchView('firmware')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>
+        <span>固件规格书</span>
+        <span class="nav-badge" id="navCountFirmware">0</span>
+      </div>
+      <div class="nav-section-title">测试执行</div>
+      <div class="nav-item" data-view="list" onclick="switchView('list')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>缺陷列表</span>
+        <span class="nav-badge" id="navCountBugs">0</span>
+      </div>
+      <div class="nav-item" data-view="testcases" onclick="switchView('testcases')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span>测试用例</span>
+        <span class="nav-badge" id="navCountCases">0</span>
+      </div>
+      <div class="nav-item" data-view="uireview" onclick="switchView('uireview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <span>UI 走查</span>
+        <span class="nav-badge" id="navCountUI">0</span>
+      </div>
+      <div class="nav-section-title">自动化</div>
+      <div class="nav-item" data-view="scripts" onclick="switchView('scripts')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+        <span>测试脚本 / 工程</span>
+        <span class="nav-badge" id="navCountScripts">0</span>
+      </div>
+      <div class="nav-item" data-view="aiassistant" onclick="switchView('aiassistant')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2H10a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/><path d="M9 21h6"/></svg>
+        <span>效率工具</span>
+      </div>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="userAvatar">A</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">admin</div>
+        <div class="user-role" id="userRole">管理员</div>
+      </div>
+      <button class="logout-btn" onclick="showChangePassword()" title="修改密码">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </button>
+      <button class="logout-btn" onclick="doLogout()" title="退出登录">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title" id="pageTitle">问题列表</div>
+        <div class="main-subtitle" id="pageSubtitle">所有测试问题记录</div>
+      </div>
+      <div class="header-actions" id="headerActions"></div>
+    </div>
+    <div class="content" id="content"></div>
+  </main>
+</div>
+
+<!-- Toast 容器 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- 进度遮罩 -->
+<div class="progress-overlay" id="progressOverlay" style="display:none">
+  <div class="progress-box">
+    <div id="progressText">处理中...</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<script>
+// ==================== 登录与用户系统 ====================
+// 内置用户库（可扩展）
+let USERS = JSON.parse(localStorage.getItem('lens_users') || 'null') || [
+  { username: 'admin', password: 'admin123456', name: '管理员', role: 'admin', email: 'admin@lens.test' },
+  { username: 'tester', password: '123456', name: '测试员', role: 'tester', email: 'tester@lens.test' },
+  { username: 'dev', password: '123456', name: '开发工程师', role: 'developer', email: 'dev@lens.test' }
+];
+
+const ROLE_MAP = {
+  admin: { label: '管理员', cls: 'badge-status-new' },
+  tester: { label: '测试员', cls: 'badge-status-resolved' },
+  developer: { label: '开发', cls: 'badge-status-processing' },
+  viewer: { label: '只读', cls: 'badge-status-closed' }
+};
+
+let currentUser = null;
+
+function saveUsers() {
+  localStorage.setItem('lens_users', JSON.stringify(USERS));
+}
+
+function checkLogin() {
+  const u = sessionStorage.getItem('lens_current_user');
+  if (u) { currentUser = JSON.parse(u); return true; }
+  return false;
+}
+function showLogin() {
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  setTimeout(() => document.getElementById('loginUser').focus(), 100);
+}
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  const err = document.getElementById('loginError');
+  const user = USERS.find(x => x.username === u && x.password === p);
+  if (user) {
+    currentUser = user;
+    sessionStorage.setItem('lens_current_user', JSON.stringify(user));
+    err.textContent = '';
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    document.getElementById('userName').textContent = user.name;
+    document.getElementById('userAvatar').textContent = user.name.charAt(0);
+    document.getElementById('userRole').textContent = (ROLE_MAP[user.role] || {}).label || user.role;
+    // 管理员显示用户管理入口
+    if (user.role === 'admin') {
+      addUserManagementNav();
+    }
+    initApp();
+  } else {
+    err.textContent = '账号或密码错误';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+function doLogout() {
+  sessionStorage.removeItem('lens_current_user');
+  currentUser = null;
+  document.getElementById('loginPass').value = '';
+  // 移除用户管理入口
+  removeUserManagementNav();
+  showLogin();
+}
+
+// 用户管理导航入口（仅管理员可见）
+function addUserManagementNav() {
+  if (document.querySelector('[data-view="usermgmt"]')) return;
+  const nav = document.querySelector('.sidebar-nav');
+  const section = document.createElement('div');
+  section.innerHTML = `
+    <div class="nav-section-title">系统</div>
+    <div class="nav-item" data-view="usermgmt" onclick="switchView('usermgmt')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <span>用户管理</span>
+    </div>
+  `;
+  nav.appendChild(section);
+}
+function removeUserManagementNav() {
+  const el = document.querySelector('[data-view="usermgmt"]');
+  if (el) el.parentElement.remove();
+}
+
+// 修改密码
+function showChangePasswordModal() {
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.id = 'cpModal';
+  mask.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <div style="font-size:16px;font-weight:600">修改密码</div>
+        <button class="modal-close" onclick="closeModal('cpModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">原密码</label>
+          <input class="form-input" type="password" id="cp_old" placeholder="请输入原密码">
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">新密码</label>
+          <input class="form-input" type="password" id="cp_new" placeholder="请输入新密码（至少6位）">
+        </div>
+        <div class="form-group">
+          <label class="form-label">确认新密码</label>
+          <input class="form-input" type="password" id="cp_confirm" placeholder="再次输入新密码">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('cpModal')">取消</button>
+        <button class="btn btn-primary" onclick="doChangePassword()">确认修改</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+}
+function closeModal(id) {
+  document.getElementById(id).remove();
+}
+function doChangePassword() {
+  const oldP = document.getElementById('cp_old').value;
+  const newP = document.getElementById('cp_new').value;
+  const confirmP = document.getElementById('cp_confirm').value;
+  if (!oldP || !newP) { toast('请填写完整', 'error'); return; }
+  if (oldP !== currentUser.password) { toast('原密码错误', 'error'); return; }
+  if (newP.length < 6) { toast('新密码至少6位', 'error'); return; }
+  if (newP !== confirmP) { toast('两次输入的新密码不一致', 'error'); return; }
+  const user = USERS.find(u => u.username === currentUser.username);
+  user.password = newP;
+  saveUsers();
+  currentUser.password = newP;
+  sessionStorage.setItem('lens_current_user', JSON.stringify(currentUser));
+  closeModal('cpModal');
+  toast('密码修改成功');
+}
+// 回车登录
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') {
+    doLogin();
+  }
+});
+
+// ==================== IndexedDB 封装 ====================
+const DB_NAME = 'test_bug_tracker';
+const DB_VERSION = 3;
+let db = null;
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('bugs')) {
+        const store = d.createObjectStore('bugs', { keyPath: 'id', autoIncrement: true });
+        store.createIndex('createdAt', 'createdAt');
+        store.createIndex('severity', 'severity');
+        store.createIndex('status', 'status');
+        store.createIndex('type', 'type');
+      }
+      if (!d.objectStoreNames.contains('attachments')) {
+        d.createObjectStore('attachments', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!d.objectStoreNames.contains('testcases')) {
+        const store = d.createObjectStore('testcases', { keyPath: 'id', autoIncrement: true });
+        store.createIndex('module', 'module');
+        store.createIndex('priority', 'priority');
+        store.createIndex('status', 'status');
+      }
+      if (!d.objectStoreNames.contains('firmware')) {
+        d.createObjectStore('firmware', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!d.objectStoreNames.contains('featurespec')) {
+        d.createObjectStore('featurespec', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!d.objectStoreNames.contains('uireview')) {
+        d.createObjectStore('uireview', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!d.objectStoreNames.contains('scripts')) {
+        d.createObjectStore('scripts', { keyPath: 'id', autoIncrement: true });
+      }
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(); };
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+function dbAdd(storeName, data) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const req = tx.objectStore(storeName).add(data);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbPut(storeName, data) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const req = tx.objectStore(storeName).put(data);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbGetAll(storeName) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbGet(storeName, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbDelete(storeName, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const req = tx.objectStore(storeName).delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ==================== 全局状态 ====================
+let currentView = 'list';
+let currentBugs = [];
+let currentEditId = null;
+let draftAttachments = [];
+let filterState = { keyword: '', severity: '', status: '', type: '' };
+
+const SEVERITY_MAP = {
+  fatal: { label: '致命', cls: 'badge-fatal' },
+  critical: { label: '严重', cls: 'badge-critical' },
+  normal: { label: '一般', cls: 'badge-normal' },
+  minor: { label: '轻微', cls: 'badge-minor' },
+  suggestion: { label: '建议', cls: 'badge-suggestion' }
+};
+const STATUS_MAP = {
+  new: { label: '新建', cls: 'badge-status-new' },
+  processing: { label: '处理中', cls: 'badge-status-processing' },
+  resolved: { label: '已解决', cls: 'badge-status-resolved' },
+  closed: { label: '已关闭', cls: 'badge-status-closed' }
+};
+const TYPE_MAP = {
+  hardware: { label: '硬件问题', cls: 'badge-type-hardware' },
+  firmware: { label: '固件问题', cls: 'badge-type-firmware' },
+  app: { label: 'APP交互', cls: 'badge-type-app' },
+  compat: { label: '兼容性', cls: 'badge-type-compat' },
+  other: { label: '其他', cls: 'badge-type-other' }
+};
+
+// ==================== 工具函数 ====================
+function toast(msg, type = 'success') {
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
+}
+function showProgress(text) {
+  document.getElementById('progressText').textContent = text || '处理中...';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('progressOverlay').style.display = 'flex';
+}
+function updateProgress(pct, text) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  if (text) document.getElementById('progressText').textContent = text;
+}
+function hideProgress() {
+  document.getElementById('progressOverlay').style.display = 'none';
+}
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+function formatDate(ts) {
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ==================== 视图切换 ====================
+function switchView(view, param) {
+  currentView = view;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+  if (view === 'list') renderListView();
+  else if (view === 'new') renderNewForm();
+  else if (view === 'stats') renderStatsView();
+  else if (view === 'detail') renderDetailView(param);
+  else if (view === 'testcases') renderTestCaseListView();
+  else if (view === 'testcaseNew') renderTestCaseForm();
+  else if (view === 'firmware') renderFirmwareListView();
+  else if (view === 'firmwareNew') renderFirmwareForm();
+  else if (view === 'featurespec') renderFeatureSpecListView();
+  else if (view === 'featurespecNew') renderFeatureSpecForm();
+  else if (view === 'uireview') renderUIReviewListView();
+  else if (view === 'uireviewNew') renderUIReviewForm();
+  else if (view === 'scripts') renderScriptListView();
+  else if (view === 'scriptNew') renderScriptForm();
+  else if (view === 'aiassistant') renderAIAssistantView();
+  else if (view === 'usermgmt') renderUserMgmtView();
+}
+
+// ==================== 列表视图 ====================
+async function loadBugs() {
+  currentBugs = await dbGetAll('bugs');
+  currentBugs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  document.getElementById('navCountBugs').textContent = currentBugs.length;
+}
+
+function renderListView() {
+  document.getElementById('pageTitle').textContent = '问题列表';
+  document.getElementById('pageSubtitle').textContent = `共 ${currentBugs.length} 条记录`;
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="exportExcel()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      导出Excel
+    </button>
+    <button class="btn btn-secondary" onclick="exportZip()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>
+      打包下载(含附件)
+    </button>
+    <button class="btn btn-primary" onclick="switchView('new')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      新建问题
+    </button>
+  `;
+
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="filter-bar">
+      <input type="text" id="filterKeyword" placeholder="搜索标题 / 设备 / 描述..." value="${escapeHtml(filterState.keyword)}" oninput="onFilterChange()">
+      <select id="filterSeverity" onchange="onFilterChange()">
+        <option value="">全部严重程度</option>
+        ${Object.entries(SEVERITY_MAP).map(([k,v]) => `<option value="${k}" ${filterState.severity===k?'selected':''}>${v.label}</option>`).join('')}
+      </select>
+      <select id="filterType" onchange="onFilterChange()">
+        <option value="">全部类型</option>
+        ${Object.entries(TYPE_MAP).map(([k,v]) => `<option value="${k}" ${filterState.type===k?'selected':''}>${v.label}</option>`).join('')}
+      </select>
+      <select id="filterStatus" onchange="onFilterChange()">
+        <option value="">全部状态</option>
+        ${Object.entries(STATUS_MAP).map(([k,v]) => `<option value="${k}" ${filterState.status===k?'selected':''}>${v.label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="table-wrap" id="tableWrap"></div>
+  `;
+  renderTable();
+}
+
+function onFilterChange() {
+  filterState.keyword = document.getElementById('filterKeyword').value;
+  filterState.severity = document.getElementById('filterSeverity').value;
+  filterState.type = document.getElementById('filterType').value;
+  filterState.status = document.getElementById('filterStatus').value;
+  renderTable();
+}
+
+function getFilteredBugs() {
+  let list = currentBugs;
+  if (filterState.keyword) {
+    const kw = filterState.keyword.toLowerCase();
+    list = list.filter(b =>
+      (b.title && b.title.toLowerCase().includes(kw)) ||
+      (b.device && b.device.toLowerCase().includes(kw)) ||
+      (b.description && b.description.toLowerCase().includes(kw)) ||
+      (b.id && `BUG-${String(b.id).padStart(3,'0')}`.includes(kw))
+    );
+  }
+  if (filterState.severity) list = list.filter(b => b.severity === filterState.severity);
+  if (filterState.type) list = list.filter(b => b.type === filterState.type);
+  if (filterState.status) list = list.filter(b => b.status === filterState.status);
+  return list;
+}
+
+function renderTable() {
+  const list = getFilteredBugs();
+  const wrap = document.getElementById('tableWrap');
+  if (list.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <p>${currentBugs.length === 0 ? '还没有问题记录，点击右上角"新建问题"开始' : '没有匹配的记录'}</p>
+    </div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table>
+      <colgroup>
+        <col style="width:80px"><col style="width:200px"><col style="width:130px">
+        <col style="width:100px"><col style="width:100px"><col style="width:100px">
+        <col style="width:80px"><col style="width:140px"><col style="width:100px">
+      </colgroup>
+      <thead><tr>
+        <th>编号</th><th>标题</th><th>硬件设备</th><th>类型</th>
+        <th>严重程度</th><th>状态</th><th>附件</th><th>创建时间</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${list.map(b => {
+          const sev = SEVERITY_MAP[b.severity] || SEVERITY_MAP.normal;
+          const st = STATUS_MAP[b.status] || STATUS_MAP.new;
+          const tp = TYPE_MAP[b.type] || TYPE_MAP.other;
+          const attCount = (b.attachmentIds || []).length;
+          return `<tr onclick="switchView('detail', ${b.id})">
+            <td style="font-weight:600;color:var(--text-secondary)">BUG-${String(b.id).padStart(3,'0')}</td>
+            <td title="${escapeHtml(b.title)}" style="font-weight:500">${escapeHtml(b.title)}</td>
+            <td>${escapeHtml(b.device) || '<span style="color:var(--text-muted)">-</span>'}</td>
+            <td><span class="badge ${tp.cls}">${tp.label}</span></td>
+            <td><span class="badge ${sev.cls}">${sev.label}</span></td>
+            <td><span class="badge ${st.cls}">${st.label}</span></td>
+            <td>${attCount > 0 ? attCount + ' 个' : '<span style="color:var(--text-muted)">-</span>'}</td>
+            <td style="color:var(--text-secondary)">${formatDate(b.createdAt)}</td>
+            <td onclick="event.stopPropagation()">
+              <button class="btn btn-sm btn-secondary" onclick="editBug(${b.id})">编辑</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteBug(${b.id})">删除</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ==================== 新建/编辑表单 ====================
+function renderNewForm(bug = null) {
+  currentEditId = bug ? bug.id : null;
+  draftAttachments = [];
+
+  document.getElementById('pageTitle').textContent = bug ? '编辑问题' : '新建问题';
+  document.getElementById('pageSubtitle').textContent = '记录硬件 / 固件 / APP 交互测试中发现的问题';
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="switchView('list')">取消</button>
+    <button class="btn btn-primary" onclick="saveBug()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+      保存问题
+    </button>
+  `;
+
+  const b = bug || {};
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">问题标题<span class="req">*</span></label>
+          <input class="form-input" id="f_title" placeholder="一句话描述问题" value="${escapeHtml(b.title||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">硬件设备型号</label>
+          <input class="form-input" id="f_device" placeholder="如：XX-200 主控板" value="${escapeHtml(b.device||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">固件版本</label>
+          <input class="form-input" id="f_firmware" placeholder="如：V1.2.3" value="${escapeHtml(b.firmware||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">APP版本</label>
+          <input class="form-input" id="f_appver" placeholder="如：3.4.0" value="${escapeHtml(b.appVersion||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">问题类型</label>
+          <select class="form-select" id="f_type">
+            ${Object.entries(TYPE_MAP).map(([k,v]) => `<option value="${k}" ${b.type===k?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">严重程度</label>
+          <select class="form-select" id="f_severity">
+            ${Object.entries(SEVERITY_MAP).map(([k,v]) => `<option value="${k}" ${b.severity===k?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">当前状态</label>
+          <select class="form-select" id="f_status">
+            ${Object.entries(STATUS_MAP).map(([k,v]) => `<option value="${k}" ${(b.status||'new')===k?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">测试人员</label>
+          <input class="form-input" id="f_tester" placeholder="你的名字" value="${escapeHtml(b.tester||'')}">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">复现步骤</label>
+          <textarea class="form-textarea" id="f_steps" placeholder="1. ...&#10;2. ...&#10;3. ...">${escapeHtml(b.steps||'')}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">预期结果</label>
+          <textarea class="form-textarea" id="f_expected" placeholder="应该发生什么">${escapeHtml(b.expected||'')}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">实际结果</label>
+          <textarea class="form-textarea" id="f_actual" placeholder="实际发生了什么">${escapeHtml(b.actual||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">问题描述 / 备注</label>
+          <textarea class="form-textarea" id="f_description" placeholder="补充说明...">${escapeHtml(b.description||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">附件（截图 / 视频）</label>
+          <div class="attach-zone" id="attachZone" onclick="document.getElementById('fileInput').click()">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.5;margin:0 auto 8px"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            <p style="font-weight:500">点击选择文件，或拖拽到此处</p>
+            <p style="font-size:12px;margin-top:4px;opacity:.7">支持图片、视频，单个文件建议不超过 200MB</p>
+          </div>
+          <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display:none" onchange="onFilesSelected(this.files)">
+          <label class="compress-toggle">
+            <input type="checkbox" id="f_compress" checked> 视频自动压缩（720p，减小体积）
+          </label>
+          <div class="attach-list" id="attachList"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const zone = document.getElementById('attachZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+  zone.addEventListener('dragleave', () => zone.style.borderColor = 'var(--border)');
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.style.borderColor = 'var(--border)';
+    onFilesSelected(e.dataTransfer.files);
+  });
+
+  if (bug && bug.attachmentIds && bug.attachmentIds.length > 0) {
+    loadExistingAttachments(bug.attachmentIds);
+  }
+}
+
+async function loadExistingAttachments(ids) {
+  for (const aid of ids) {
+    const att = await dbGet('attachments', aid);
+    if (att) {
+      draftAttachments.push({ id: att.id, name: att.name, size: att.size, type: att.type, blob: att.blob, existing: true });
+    }
+  }
+  renderAttachList();
+}
+
+async function onFilesSelected(files) {
+  const compress = document.getElementById('f_compress').checked;
+  showProgress('处理附件...');
+  for (const file of files) {
+    let blob = file;
+    if (compress && file.type.startsWith('video/') && file.size > 10 * 1024 * 1024) {
+      try {
+        updateProgress(10, `压缩视频: ${file.name}`);
+        blob = await compressVideo(file);
+        updateProgress(80, `压缩完成: ${file.name}`);
+      } catch (e) {
+        console.warn('视频压缩失败，使用原文件', e);
+      }
+    }
+    draftAttachments.push({ name: file.name, size: blob.size, type: file.type, blob: blob });
+  }
+  hideProgress();
+  renderAttachList();
+  toast(`已添加 ${files.length} 个附件`);
+}
+
+function compressVideo(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    video.playsInline = true;
+    video.onloadedmetadata = () => {
+      let w = video.videoWidth, h = video.videoHeight;
+      const maxW = 1280, maxH = 720;
+      if (w > maxW) { h = h * maxW / w; w = maxW; }
+      if (h > maxH) { w = w * maxH / h; h = maxH; }
+      w = Math.floor(w / 2) * 2; h = Math.floor(h / 2) * 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const stream = canvas.captureStream(30);
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 1500000
+      });
+      const chunks = [];
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      recorder.onstop = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(new Blob(chunks, { type: 'video/webm' }));
+      };
+      video.ontimeupdate = () => { ctx.drawImage(video, 0, 0, w, h); };
+      video.onended = () => recorder.stop();
+      video.play();
+      recorder.start();
+    };
+    video.onerror = reject;
+  });
+}
+
+function renderAttachList() {
+  const list = document.getElementById('attachList');
+  if (!list) return;
+  list.innerHTML = draftAttachments.map((a, i) => {
+    const isImg = a.type.startsWith('image/');
+    const icon = isImg
+      ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
+    return `<div class="attach-item">
+      <div class="icon">${icon}</div>
+      <div class="name">${escapeHtml(a.name)}</div>
+      <div class="size">${formatSize(a.size)}</div>
+      <div class="remove" onclick="removeAttach(${i})">×</div>
+    </div>`;
+  }).join('');
+}
+
+function removeAttach(idx) {
+  draftAttachments.splice(idx, 1);
+  renderAttachList();
+}
+
+async function saveBug() {
+  const title = document.getElementById('f_title').value.trim();
+  if (!title) { toast('请填写问题标题', 'error'); return; }
+
+  const data = {
+    title,
+    device: document.getElementById('f_device').value.trim(),
+    firmware: document.getElementById('f_firmware').value.trim(),
+    appVersion: document.getElementById('f_appver').value.trim(),
+    type: document.getElementById('f_type').value,
+    severity: document.getElementById('f_severity').value,
+    status: document.getElementById('f_status').value,
+    tester: document.getElementById('f_tester').value.trim(),
+    steps: document.getElementById('f_steps').value,
+    expected: document.getElementById('f_expected').value,
+    actual: document.getElementById('f_actual').value,
+    description: document.getElementById('f_description').value,
+    updatedAt: Date.now()
+  };
+
+  showProgress('保存中...');
+  try {
+    let bugId = currentEditId;
+    if (bugId) {
+      const old = await dbGet('bugs', bugId);
+      data.id = bugId;
+      data.createdAt = old.createdAt;
+      data.attachmentIds = old.attachmentIds || [];
+    } else {
+      data.createdAt = Date.now();
+      data.attachmentIds = [];
+    }
+
+    for (const att of draftAttachments) {
+      if (att.existing) continue;
+      const attId = await dbAdd('attachments', {
+        name: att.name, size: att.size, type: att.type, blob: att.blob
+      });
+      data.attachmentIds.push(attId);
+    }
+
+    if (bugId) { await dbPut('bugs', data); }
+    else { bugId = await dbAdd('bugs', data); }
+
+    await loadBugs();
+    hideProgress();
+    toast('保存成功');
+    switchView('list');
+  } catch (e) {
+    hideProgress();
+    console.error(e);
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
+function editBug(id) {
+  const bug = currentBugs.find(b => b.id === id);
+  if (bug) renderNewForm(bug);
+}
+
+async function deleteBug(id) {
+  if (!confirm('确定删除这条问题记录吗？附件也会一并删除。')) return;
+  const bug = await dbGet('bugs', id);
+  if (bug && bug.attachmentIds) {
+    for (const aid of bug.attachmentIds) {
+      try { await dbDelete('attachments', aid); } catch(e) {}
+    }
+  }
+  await dbDelete('bugs', id);
+  await loadBugs();
+  toast('已删除');
+  if (currentView === 'detail') switchView('list');
+  else renderTable();
+}
+
+// ==================== 详情视图 ====================
+async function renderDetailView(id) {
+  const bug = await dbGet('bugs', id);
+  if (!bug) { toast('记录不存在', 'error'); switchView('list'); return; }
+
+  document.getElementById('pageTitle').textContent = `BUG-${String(bug.id).padStart(3,'0')}`;
+  document.getElementById('pageSubtitle').textContent = bug.title;
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="switchView('list')">返回列表</button>
+    <button class="btn btn-primary" onclick="editBug(${bug.id})">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      编辑
+    </button>
+  `;
+
+  const sev = SEVERITY_MAP[bug.severity] || SEVERITY_MAP.normal;
+  const st = STATUS_MAP[bug.status] || STATUS_MAP.new;
+  const tp = TYPE_MAP[bug.type] || TYPE_MAP.other;
+
+  let attHtml = '<p style="color:var(--text-muted);font-size:13px">无附件</p>';
+  if (bug.attachmentIds && bug.attachmentIds.length > 0) {
+    const items = [];
+    for (const aid of bug.attachmentIds) {
+      const att = await dbGet('attachments', aid);
+      if (att) {
+        const url = URL.createObjectURL(att.blob);
+        if (att.type.startsWith('image/')) {
+          items.push(`<div style="margin-bottom:12px"><img src="${url}" style="max-width:100%;max-height:320px;border-radius:8px;border:1px solid var(--border)"><div style="font-size:12px;color:var(--text-muted);margin-top:6px">${escapeHtml(att.name)} · ${formatSize(att.size)}</div></div>`);
+        } else if (att.type.startsWith('video/')) {
+          items.push(`<div style="margin-bottom:12px"><video controls src="${url}" style="max-width:100%;border-radius:8px;border:1px solid var(--border)"></video><div style="font-size:12px;color:var(--text-muted);margin-top:6px">${escapeHtml(att.name)} · ${formatSize(att.size)}</div></div>`);
+        } else {
+          items.push(`<div style="font-size:13px;padding:8px 12px;background:var(--border-light);border-radius:6px">${escapeHtml(att.name)} (${formatSize(att.size)})</div>`);
+        }
+      }
+    }
+    attHtml = items.join('');
+  }
+
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="form-card">
+      <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+        <span class="badge ${tp.cls}">${tp.label}</span>
+        <span class="badge ${sev.cls}">${sev.label}</span>
+        <span class="badge ${st.cls}">${st.label}</span>
+      </div>
+      <div class="detail-section">
+        <h3>基本信息</h3>
+        <div class="detail-row"><span class="label">硬件设备</span><span class="value">${escapeHtml(bug.device) || '-'}</span></div>
+        <div class="detail-row"><span class="label">固件版本</span><span class="value">${escapeHtml(bug.firmware) || '-'}</span></div>
+        <div class="detail-row"><span class="label">APP版本</span><span class="value">${escapeHtml(bug.appVersion) || '-'}</span></div>
+        <div class="detail-row"><span class="label">测试人员</span><span class="value">${escapeHtml(bug.tester) || '-'}</span></div>
+        <div class="detail-row"><span class="label">创建时间</span><span class="value">${formatDate(bug.createdAt)}</span></div>
+        ${bug.updatedAt ? `<div class="detail-row"><span class="label">更新时间</span><span class="value">${formatDate(bug.updatedAt)}</span></div>` : ''}
+      </div>
+      <div class="detail-section">
+        <h3>问题描述</h3>
+        <div class="detail-row"><span class="label">标题</span><span class="value" style="font-weight:600">${escapeHtml(bug.title)}</span></div>
+        <div class="detail-row"><span class="label">描述</span><span class="value">${escapeHtml(bug.description) || '-'}</span></div>
+      </div>
+      <div class="detail-section">
+        <h3>复现步骤</h3>
+        <div class="detail-row"><span class="label">步骤</span><span class="value">${escapeHtml(bug.steps) || '-'}</span></div>
+        <div class="detail-row"><span class="label">预期结果</span><span class="value" style="color:var(--success)">${escapeHtml(bug.expected) || '-'}</span></div>
+        <div class="detail-row"><span class="label">实际结果</span><span class="value" style="color:var(--danger)">${escapeHtml(bug.actual) || '-'}</span></div>
+      </div>
+      <div class="detail-section">
+        <h3>附件</h3>
+        ${attHtml}
+      </div>
+    </div>
+  `;
+}
+
+// ==================== 统计视图 ====================
+function renderStatsView() {
+  document.getElementById('pageTitle').textContent = '工作台';
+  document.getElementById('pageSubtitle').textContent = '全模块数据总览';
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="exportAllData()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      导出全部数据
+    </button>
+    <button class="btn btn-primary" onclick="switchView('new')">+ 新建问题</button>
+  `;
+
+  const total = currentBugs.length;
+  const countBy = (arr, field, val) => arr.filter(b => b[field] === val).length;
+  const content = document.getElementById('content');
+
+  content.innerHTML = `
+    <!-- 模块总览卡片 -->
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:24px">
+      <div class="stat-card" style="cursor:pointer" onclick="switchView('list')">
+        <div class="stat-label">缺陷总数</div>
+        <div class="stat-value">${currentBugs.length}</div>
+      </div>
+      <div class="stat-card severity-critical" style="cursor:pointer" onclick="switchView('testcases')">
+        <div class="stat-label">测试用例</div>
+        <div class="stat-value">${currentTestCases.length}</div>
+      </div>
+      <div class="stat-card severity-normal" style="cursor:pointer" onclick="switchView('firmware')">
+        <div class="stat-label">固件版本</div>
+        <div class="stat-value">${currentFirmwareList.length}</div>
+      </div>
+      <div class="stat-card severity-suggestion" style="cursor:pointer" onclick="switchView('featurespec')">
+        <div class="stat-label">功能模块</div>
+        <div class="stat-value">${currentFeatureSpecs.length}</div>
+      </div>
+      <div class="stat-card severity-minor" style="cursor:pointer" onclick="switchView('uireview')">
+        <div class="stat-label">UI 走查</div>
+        <div class="stat-value">${currentUIReviews.length}</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer" onclick="switchView('scripts')">
+        <div class="stat-label">测试脚本</div>
+        <div class="stat-value">${currentScripts.length}</div>
+      </div>
+    </div>
+
+    <!-- 缺陷分布 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:14px;margin-bottom:16px;font-weight:600">缺陷严重程度</h3>
+        ${Object.entries(SEVERITY_MAP).map(([k,v]) => {
+          const c = countBy(currentBugs, 'severity', k);
+          const pct = total ? Math.round(c/total*100) : 0;
+          return `<div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>${v.label}</span><span style="color:var(--text-secondary);font-weight:500">${c} (${pct}%)</span></div>
+            <div style="height:8px;background:var(--border-light);border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#3b82f6,#2563eb);border-radius:4px;transition:width .3s"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:14px;margin-bottom:16px;font-weight:600">缺陷处理状态</h3>
+        ${Object.entries(STATUS_MAP).map(([k,v]) => {
+          const c = countBy(currentBugs, 'status', k);
+          const pct = total ? Math.round(c/total*100) : 0;
+          const colors = { new: '#2563eb', processing: '#d97706', resolved: '#16a34a', closed: '#94a3b8' };
+          return `<div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>${v.label}</span><span style="color:var(--text-secondary);font-weight:500">${c} (${pct}%)</span></div>
+            <div style="height:8px;background:var(--border-light);border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${colors[k]||'#2563eb'};border-radius:4px;transition:width .3s"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- 快捷入口 -->
+    <div class="form-card" style="padding:24px">
+      <h3 style="font-size:14px;margin-bottom:16px;font-weight:600">快捷操作</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:8px;height:90px" onclick="switchView('new')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          新建缺陷
+        </button>
+        <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:8px;height:90px" onclick="switchView('testcaseNew')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          新建用例
+        </button>
+        <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:8px;height:90px" onclick="switchView('firmwareNew')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+          新固件版本
+        </button>
+        <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:8px;height:90px" onclick="switchView('aiassistant')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2H10a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/></svg>
+          效率工具
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// 导出全部数据（JSON备份）
+async function exportAllData() {
+  showProgress('导出全部数据...');
+  try {
+    const data = {
+      exportTime: new Date().toISOString(),
+      bugs: currentBugs,
+      testcases: currentTestCases,
+      firmware: currentFirmwareList,
+      featurespec: currentFeatureSpecs,
+      uireview: currentUIReviews,
+      scripts: currentScripts
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    saveAs(blob, `综合管理平台_数据备份_${new Date().toISOString().slice(0,10)}.json`);
+    hideProgress();
+    toast('已导出全部数据备份');
+  } catch (e) {
+    hideProgress();
+    toast('导出失败: ' + e.message, 'error');
+  }
+}
+
+// ==================== 导出功能 ====================
+async function exportExcel() {
+  const list = getFilteredBugs();
+  if (list.length === 0) { toast('没有可导出的记录', 'error'); return; }
+  showProgress('生成Excel...');
+
+  const rows = list.map(b => ({
+    '编号': `BUG-${String(b.id).padStart(3,'0')}`,
+    '问题标题': b.title || '',
+    '硬件设备': b.device || '',
+    '固件版本': b.firmware || '',
+    'APP版本': b.appVersion || '',
+    '问题类型': (TYPE_MAP[b.type] || {}).label || b.type || '',
+    '严重程度': (SEVERITY_MAP[b.severity] || {}).label || b.severity || '',
+    '状态': (STATUS_MAP[b.status] || {}).label || b.status || '',
+    '测试人员': b.tester || '',
+    '复现步骤': b.steps || '',
+    '预期结果': b.expected || '',
+    '实际结果': b.actual || '',
+    '问题描述': b.description || '',
+    '附件数': (b.attachmentIds || []).length,
+    '创建时间': formatDate(b.createdAt),
+    '更新时间': b.updatedAt ? formatDate(b.updatedAt) : ''
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [
+    { wch: 10 }, { wch: 30 }, { wch: 18 }, { wch: 12 }, { wch: 12 },
+    { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+    { wch: 40 }, { wch: 30 }, { wch: 30 }, { wch: 30 },
+    { wch: 8 }, { wch: 16 }, { wch: 16 }
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '测试问题列表');
+  XLSX.writeFile(wb, `测试问题列表_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+  hideProgress();
+  toast(`已导出 ${list.length} 条记录`);
+}
+
+async function exportZip() {
+  const list = getFilteredBugs();
+  if (list.length === 0) { toast('没有可导出的记录', 'error'); return; }
+  showProgress('打包中...');
+
+  const zip = new JSZip();
+  const rows = list.map(b => ({
+    '编号': `BUG-${String(b.id).padStart(3,'0')}`,
+    '问题标题': b.title || '',
+    '硬件设备': b.device || '',
+    '固件版本': b.firmware || '',
+    'APP版本': b.appVersion || '',
+    '问题类型': (TYPE_MAP[b.type] || {}).label || '',
+    '严重程度': (SEVERITY_MAP[b.severity] || {}).label || '',
+    '状态': (STATUS_MAP[b.status] || {}).label || '',
+    '测试人员': b.tester || '',
+    '复现步骤': b.steps || '',
+    '预期结果': b.expected || '',
+    '实际结果': b.actual || '',
+    '问题描述': b.description || '',
+    '附件数': (b.attachmentIds || []).length,
+    '创建时间': formatDate(b.createdAt),
+    '更新时间': b.updatedAt ? formatDate(b.updatedAt) : ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{ wch: 10 },{ wch: 30 },{ wch: 18 },{ wch: 12 },{ wch: 12 },{ wch: 10 },{ wch: 10 },{ wch: 10 },{ wch: 10 },{ wch: 40 },{ wch: 30 },{ wch: 30 },{ wch: 30 },{ wch: 8 },{ wch: 16 },{ wch: 16 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '测试问题列表');
+  const excelBuf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  zip.file('测试问题列表.xlsx', excelBuf);
+
+  const attFolder = zip.folder('附件');
+  let attCount = 0;
+  for (const b of list) {
+    if (!b.attachmentIds || b.attachmentIds.length === 0) continue;
+    const bugFolder = attFolder.folder(`BUG-${String(b.id).padStart(3,'0')}`);
+    for (const aid of b.attachmentIds) {
+      const att = await dbGet('attachments', aid);
+      if (att) { bugFolder.file(att.name, att.blob); attCount++; }
+    }
+  }
+
+  updateProgress(90, '正在生成压缩包...');
+  const blob = await zip.generateAsync({ type: 'blob' });
+  saveAs(blob, `测试问题打包_${new Date().toISOString().slice(0,10)}.zip`);
+  hideProgress();
+  toast(`已导出 ${list.length} 条记录 + ${attCount} 个附件`);
+}
+
+// ==================== 测试用例模块 ====================
+let currentTestCases = [];
+let editTestCaseId = null;
+
+const TC_PRIORITY = {
+  P0: { label: 'P0 冒烟', cls: 'badge-fatal' },
+  P1: { label: 'P1 核心', cls: 'badge-critical' },
+  P2: { label: 'P2 一般', cls: 'badge-normal' },
+  P3: { label: 'P3 边缘', cls: 'badge-minor' }
+};
+const TC_STATUS = {
+  pending: { label: '未执行', cls: 'badge-status-new' },
+  passed: { label: '通过', cls: 'badge-status-resolved' },
+  failed: { label: '失败', cls: 'badge-fatal' },
+  blocked: { label: '阻塞', cls: 'badge-status-processing' }
+};
+const TC_TYPE = {
+  functional: '功能测试',
+  performance: '性能测试',
+  compatibility: '兼容性测试',
+  reliability: '可靠性测试',
+  ui: 'UI 走查',
+  other: '其他'
+};
+
+async function loadTestCases() {
+  currentTestCases = await dbGetAll('testcases');
+  currentTestCases.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+function renderTestCaseListView() {
+  document.getElementById('pageTitle').textContent = '测试用例';
+  document.getElementById('pageSubtitle').textContent = `共 ${currentTestCases.length} 条用例`;
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-primary" onclick="switchView('testcaseNew')">+ 新建用例</button>
+  `;
+  const content = document.getElementById('content');
+  if (currentTestCases.length === 0) {
+    content.innerHTML = `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <p>还没有测试用例，点击右上角"新建用例"开始编写</p>
+    </div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col style="width:80px"><col style="width:180px"><col style="width:120px">
+          <col style="width:100px"><col style="width:100px"><col style="width:100px">
+          <col style="width:100px"><col style="width:100px"><col style="width:100px">
+        </colgroup>
+        <thead><tr>
+          <th>编号</th><th>用例标题</th><th>所属模块</th><th>类型</th>
+          <th>优先级</th><th>执行状态</th><th>执行人</th><th>创建时间</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${currentTestCases.map(tc => {
+            const pr = TC_PRIORITY[tc.priority] || TC_PRIORITY.P2;
+            const st = TC_STATUS[tc.status] || TC_STATUS.pending;
+            return `<tr>
+              <td style="font-weight:600;color:var(--text-secondary)">TC-${String(tc.id).padStart(3,'0')}</td>
+              <td style="font-weight:500" title="${escapeHtml(tc.title)}">${escapeHtml(tc.title)}</td>
+              <td>${escapeHtml(tc.module) || '-'}</td>
+              <td>${TC_TYPE[tc.type] || tc.type || '-'}</td>
+              <td><span class="badge ${pr.cls}">${pr.label}</span></td>
+              <td><span class="badge ${st.cls}">${st.label}</span></td>
+              <td>${escapeHtml(tc.executor) || '-'}</td>
+              <td style="color:var(--text-secondary)">${formatDate(tc.createdAt)}</td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="editTestCase(${tc.id})">编辑</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteTestCase(${tc.id})">删除</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderTestCaseForm(tc = null) {
+  editTestCaseId = tc ? tc.id : null;
+  document.getElementById('pageTitle').textContent = tc ? '编辑测试用例' : '新建测试用例';
+  document.getElementById('pageSubtitle').textContent = '编写硬件 / 固件 / APP 交互测试用例';
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="switchView('testcases')">取消</button>
+    <button class="btn btn-primary" onclick="saveTestCase()">保存用例</button>
+  `;
+  const t = tc || {};
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">用例标题<span class="req">*</span></label>
+          <input class="form-input" id="tc_title" placeholder="如：设备开机后蓝牙自动连接测试" value="${escapeHtml(t.title||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">所属模块</label>
+          <input class="form-input" id="tc_module" placeholder="如：蓝牙连接 / 电源管理" value="${escapeHtml(t.module||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">用例类型</label>
+          <select class="form-select" id="tc_type">
+            ${Object.entries(TC_TYPE).map(([k,v]) => `<option value="${k}" ${t.type===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">优先级</label>
+          <select class="form-select" id="tc_priority">
+            ${Object.entries(TC_PRIORITY).map(([k,v]) => `<option value="${k}" ${(t.priority||'P2')===k?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">执行状态</label>
+          <select class="form-select" id="tc_status">
+            ${Object.entries(TC_STATUS).map(([k,v]) => `<option value="${k}" ${(t.status||'pending')===k?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">前置条件</label>
+          <input class="form-input" id="tc_precondition" placeholder="如：设备已充满电" value="${escapeHtml(t.precondition||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">执行人</label>
+          <input class="form-input" id="tc_executor" placeholder="执行人姓名" value="${escapeHtml(t.executor||'')}">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">测试步骤</label>
+          <textarea class="form-textarea" id="tc_steps" placeholder="1. 设备上电&#10;2. 打开APP搜索设备&#10;3. 点击连接&#10;4. 观察连接状态">${escapeHtml(t.steps||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">预期结果</label>
+          <textarea class="form-textarea" id="tc_expected" placeholder="如：3秒内完成连接，APP显示设备在线状态">${escapeHtml(t.expected||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" id="tc_notes" placeholder="补充说明...">${escapeHtml(t.notes||'')}</textarea>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveTestCase() {
+  const title = document.getElementById('tc_title').value.trim();
+  if (!title) { toast('请填写用例标题', 'error'); return; }
+  const data = {
+    title,
+    module: document.getElementById('tc_module').value.trim(),
+    type: document.getElementById('tc_type').value,
+    priority: document.getElementById('tc_priority').value,
+    status: document.getElementById('tc_status').value,
+    precondition: document.getElementById('tc_precondition').value.trim(),
+    steps: document.getElementById('tc_steps').value,
+    expected: document.getElementById('tc_expected').value,
+    executor: document.getElementById('tc_executor').value.trim(),
+    notes: document.getElementById('tc_notes').value,
+    updatedAt: Date.now()
+  };
+  try {
+    if (editTestCaseId) {
+      const old = await dbGet('testcases', editTestCaseId);
+      data.id = editTestCaseId;
+      data.createdAt = old.createdAt;
+      await dbPut('testcases', data);
+    } else {
+      data.createdAt = Date.now();
+      await dbAdd('testcases', data);
+    }
+    await loadTestCases();
+    toast('保存成功');
+    switchView('testcases');
+  } catch (e) {
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
+function editTestCase(id) {
+  const tc = currentTestCases.find(t => t.id === id);
+  if (tc) renderTestCaseForm(tc);
+}
+
+async function deleteTestCase(id) {
+  if (!confirm('确定删除这条测试用例吗？')) return;
+  await dbDelete('testcases', id);
+  await loadTestCases();
+  toast('已删除');
+  switchView('testcases');
+}
+
+// ==================== 固件规格书模块 ====================
+let currentFirmwareList = [];
+let editFirmwareId = null;
+
+async function loadFirmware() {
+  currentFirmwareList = await dbGetAll('firmware');
+  currentFirmwareList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+function renderFirmwareListView() {
+  document.getElementById('pageTitle').textContent = '固件规格书';
+  document.getElementById('pageSubtitle').textContent = `共 ${currentFirmwareList.length} 个固件版本`;
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-primary" onclick="switchView('firmwareNew')">+ 新建版本</button>
+  `;
+  const content = document.getElementById('content');
+  if (currentFirmwareList.length === 0) {
+    content.innerHTML = `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+      <p>还没有固件版本记录，点击右上角"新建版本"开始</p>
+    </div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col style="width:120px"><col style="width:150px"><col style="width:120px">
+          <col style="width:100px"><col style="width:200px"><col style="width:100px"><col style="width:100px">
+        </colgroup>
+        <thead><tr>
+          <th>固件版本</th><th>硬件型号</th><th>发布日期</th>
+          <th>发布人</th><th>更新内容</th><th>文件大小</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${currentFirmwareList.map(fw => `
+            <tr>
+              <td style="font-weight:600;color:var(--accent)">${escapeHtml(fw.version)}</td>
+              <td>${escapeHtml(fw.hardware) || '-'}</td>
+              <td style="color:var(--text-secondary)">${formatDate(fw.releaseDate || fw.createdAt)}</td>
+              <td>${escapeHtml(fw.author) || '-'}</td>
+              <td title="${escapeHtml(fw.changelog)}" style="color:var(--text-secondary)">${escapeHtml(fw.changelog) || '-'}</td>
+              <td>${fw.fileSize ? formatSize(fw.fileSize) : '-'}</td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="editFirmware(${fw.id})">编辑</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteFirmware(${fw.id})">删除</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderFirmwareForm(fw = null) {
+  editFirmwareId = fw ? fw.id : null;
+  document.getElementById('pageTitle').textContent = fw ? '编辑固件版本' : '新建固件版本';
+  document.getElementById('pageSubtitle').textContent = '记录固件发布信息、更新内容和已知问题';
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="switchView('firmware')">取消</button>
+    <button class="btn btn-primary" onclick="saveFirmware()">保存版本</button>
+  `;
+  const f = fw || {};
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="form-card" style="margin-bottom:16px;padding:16px 20px;background:#f8fafc;border:1px solid var(--border-light)">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleFwImport()">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <span style="font-size:14px;font-weight:600">智能导入固件更新日志</span>
+          <span style="font-size:12px;color:var(--text-muted)">粘贴更新日志/Release Note，自动提取版本和内容</span>
+        </div>
+        <svg id="fwImportArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform .2s"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div id="fwImportArea" style="display:none;margin-top:14px">
+        <textarea class="form-textarea" id="fw_import_text" style="min-height:120px" placeholder="在此粘贴固件更新日志全文..."></textarea>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="parseFirmwareSpec()">智能解析填充</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fw_import_text').value=''">清空</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">固件版本号<span class="req">*</span></label>
+          <input class="form-input" id="fw_version" placeholder="如：V1.2.3" value="${escapeHtml(f.version||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">硬件型号</label>
+          <input class="form-input" id="fw_hardware" placeholder="如：XX-200 主控板" value="${escapeHtml(f.hardware||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">发布日期</label>
+          <input class="form-input" id="fw_releaseDate" type="date" value="${f.releaseDate ? new Date(f.releaseDate).toISOString().slice(0,10) : ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">发布人</label>
+          <input class="form-input" id="fw_author" placeholder="发布人姓名" value="${escapeHtml(f.author||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">文件大小</label>
+          <input class="form-input" id="fw_fileSize" type="number" placeholder="单位：字节" value="${f.fileSize || ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">MD5 校验值</label>
+          <input class="form-input" id="fw_md5" placeholder="可选" value="${escapeHtml(f.md5||'')}">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">更新日志（Changelog）</label>
+          <textarea class="form-textarea" id="fw_changelog" placeholder="【新功能】&#10;1. ...&#10;&#10;【问题修复】&#10;1. ...&#10;&#10;【性能优化】&#10;1. ...">${escapeHtml(f.changelog||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">已知问题</label>
+          <textarea class="form-textarea" id="fw_knownIssues" placeholder="本版本已知的未解决问题...">${escapeHtml(f.knownIssues||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">升级方式</label>
+          <textarea class="form-textarea" id="fw_upgradeMethod" placeholder="如：OTA升级 / USB串口升级 / 烧录器...">${escapeHtml(f.upgradeMethod||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" id="fw_notes" placeholder="补充说明...">${escapeHtml(f.notes||'')}</textarea>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 固件导入区域展开/收起
+function toggleFwImport() {
+  const area = document.getElementById('fwImportArea');
+  const arrow = document.getElementById('fwImportArrow');
+  if (area.style.display === 'none') {
+    area.style.display = 'block';
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    area.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
+  }
+}
+
+// 智能解析固件更新日志
+function parseFirmwareSpec() {
+  const text = document.getElementById('fw_import_text').value.trim();
+  if (!text) { toast('请先粘贴更新日志内容', 'error'); return; }
+
+  // 提取版本号
+  const verMatch = text.match(/[vV](\d+\.\d+(?:\.\d+)?)/);
+  if (verMatch && !document.getElementById('fw_version').value) {
+    document.getElementById('fw_version').value = verMatch[0];
+  }
+
+  // 分段提取：新功能 / 问题修复 / 性能优化 / 已知问题
+  const lines = text.split('\n');
+  let changelog = '', knownIssues = '';
+  let currentSection = '';
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (/新功能|新增|Feature/.test(trimmed)) { currentSection = 'changelog'; continue; }
+    if (/问题修复|修复|Fix|Bug修复/.test(trimmed)) { currentSection = 'changelog'; changelog += trimmed + '\n'; continue; }
+    if (/性能优化|优化|Optimize/.test(trimmed)) { currentSection = 'changelog'; changelog += trimmed + '\n'; continue; }
+    if (/已知问题|未解决|Known Issue/.test(trimmed)) { currentSection = 'known'; continue; }
+
+    if (currentSection === 'changelog') changelog += trimmed + '\n';
+    else if (currentSection === 'known') knownIssues += trimmed + '\n';
+    else changelog += trimmed + '\n';
+  }
+
+  if (changelog.trim()) document.getElementById('fw_changelog').value = changelog.trim();
+  if (knownIssues.trim()) document.getElementById('fw_knownIssues').value = knownIssues.trim();
+
+  toast('解析完成，已自动填充字段');
+}
+
+async function saveFirmware() {
+  const version = document.getElementById('fw_version').value.trim();
+  if (!version) { toast('请填写固件版本号', 'error'); return; }
+  const data = {
+    version,
+    hardware: document.getElementById('fw_hardware').value.trim(),
+    releaseDate: document.getElementById('fw_releaseDate').value ? new Date(document.getElementById('fw_releaseDate').value).getTime() : Date.now(),
+    author: document.getElementById('fw_author').value.trim(),
+    fileSize: parseInt(document.getElementById('fw_fileSize').value) || 0,
+    md5: document.getElementById('fw_md5').value.trim(),
+    changelog: document.getElementById('fw_changelog').value,
+    knownIssues: document.getElementById('fw_knownIssues').value,
+    upgradeMethod: document.getElementById('fw_upgradeMethod').value,
+    notes: document.getElementById('fw_notes').value,
+    updatedAt: Date.now()
+  };
+  try {
+    if (editFirmwareId) {
+      const old = await dbGet('firmware', editFirmwareId);
+      data.id = editFirmwareId;
+      data.createdAt = old.createdAt;
+      await dbPut('firmware', data);
+    } else {
+      data.createdAt = Date.now();
+      await dbAdd('firmware', data);
+    }
+    await loadFirmware();
+    toast('保存成功');
+    switchView('firmware');
+  } catch (e) {
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
+function editFirmware(id) {
+  const fw = currentFirmwareList.find(f => f.id === id);
+  if (fw) renderFirmwareForm(fw);
+}
+
+async function deleteFirmware(id) {
+  if (!confirm('确定删除这条固件版本记录吗？')) return;
+  await dbDelete('firmware', id);
+  await loadFirmware();
+  toast('已删除');
+  switchView('firmware');
+}
+
+// ==================== 功能规格书模块 ====================
+let currentFeatureSpecs = [];
+let editFeatureSpecId = null;
+
+async function loadFeatureSpecs() {
+  currentFeatureSpecs = await dbGetAll('featurespec');
+  currentFeatureSpecs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+function renderFeatureSpecListView() {
+  document.getElementById('pageTitle').textContent = '功能规格书';
+  document.getElementById('pageSubtitle').textContent = `共 ${currentFeatureSpecs.length} 个功能模块`;
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-primary" onclick="switchView('featurespecNew')">+ 新建功能</button>
+  `;
+  const content = document.getElementById('content');
+  if (currentFeatureSpecs.length === 0) {
+    content.innerHTML = `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+      <p>还没有功能规格书，点击右上角"新建功能"开始编写</p>
+    </div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col style="width:180px"><col style="width:100px"><col style="width:120px">
+          <col style="width:200px"><col style="width:100px"><col style="width:100px"><col style="width:100px">
+        </colgroup>
+        <thead><tr>
+          <th>功能名称</th><th>版本</th><th>负责人</th>
+          <th>功能描述</th><th>状态</th><th>更新时间</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${currentFeatureSpecs.map(fs => `
+            <tr>
+              <td style="font-weight:600">${escapeHtml(fs.name)}</td>
+              <td>${escapeHtml(fs.version) || '-'}</td>
+              <td>${escapeHtml(fs.owner) || '-'}</td>
+              <td title="${escapeHtml(fs.description)}" style="color:var(--text-secondary)">${escapeHtml(fs.description) || '-'}</td>
+              <td><span class="badge ${fs.status === 'online' ? 'badge-status-resolved' : 'badge-status-processing'}">${fs.status === 'online' ? '已上线' : '开发中'}</span></td>
+              <td style="color:var(--text-secondary)">${formatDate(fs.updatedAt || fs.createdAt)}</td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="editFeatureSpec(${fs.id})">编辑</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteFeatureSpec(${fs.id})">删除</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderFeatureSpecForm(fs = null) {
+  editFeatureSpecId = fs ? fs.id : null;
+  document.getElementById('pageTitle').textContent = fs ? '编辑功能规格书' : '新建功能规格书';
+  document.getElementById('pageSubtitle').textContent = '编写功能模块的输入输出、业务规则和验收标准';
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="switchView('featurespec')">取消</button>
+    <button class="btn btn-primary" onclick="saveFeatureSpec()">保存功能</button>
+  `;
+  const f = fs || {};
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="form-card" style="margin-bottom:16px;padding:16px 20px;background:#f8fafc;border:1px solid var(--border-light)">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleImportArea()">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <span style="font-size:14px;font-weight:600">智能导入规格书文本</span>
+          <span style="font-size:12px;color:var(--text-muted)">粘贴PRD/设计文档，自动提取关键信息填充</span>
+        </div>
+        <svg id="importArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform .2s"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div id="importArea" style="display:none;margin-top:14px">
+        <textarea class="form-textarea" id="fs_import_text" style="min-height:120px" placeholder="在此粘贴规格书/PRD的全文内容..."></textarea>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="parseFeatureSpec()">智能解析填充</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fs_import_text').value=''">清空</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">功能名称<span class="req">*</span></label>
+          <input class="form-input" id="fs_name" placeholder="如：蓝牙配网" value="${escapeHtml(f.name||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">版本</label>
+          <input class="form-input" id="fs_version" placeholder="如：V1.0" value="${escapeHtml(f.version||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">负责人</label>
+          <input class="form-input" id="fs_owner" placeholder="产品/开发负责人" value="${escapeHtml(f.owner||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">状态</label>
+          <select class="form-select" id="fs_status">
+            <option value="developing" ${(f.status||'developing')==='developing'?'selected':''}>开发中</option>
+            <option value="online" ${f.status==='online'?'selected':''}>已上线</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">功能描述</label>
+          <textarea class="form-textarea" id="fs_description" placeholder="简要描述这个功能的作用和目标...">${escapeHtml(f.description||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">输入 / 输出</label>
+          <textarea class="form-textarea" id="fs_io" placeholder="输入：&#10;- ...&#10;&#10;输出：&#10;- ...">${escapeHtml(f.io||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">业务规则</label>
+          <textarea class="form-textarea" id="fs_rules" placeholder="1. ...&#10;2. ...">${escapeHtml(f.rules||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">异常处理</label>
+          <textarea class="form-textarea" id="fs_exceptions" placeholder="异常场景及处理方式...">${escapeHtml(f.exceptions||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">验收标准</label>
+          <textarea class="form-textarea" id="fs_acceptance" placeholder="1. ...&#10;2. ...">${escapeHtml(f.acceptance||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">关联需求 / 备注</label>
+          <textarea class="form-textarea" id="fs_notes" placeholder="关联的需求文档、PRD链接等...">${escapeHtml(f.notes||'')}</textarea>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 导入区域展开/收起
+function toggleImportArea() {
+  const area = document.getElementById('importArea');
+  const arrow = document.getElementById('importArrow');
+  if (area.style.display === 'none') {
+    area.style.display = 'block';
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    area.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
+  }
+}
+
+// 智能解析功能规格书文本
+function parseFeatureSpec() {
+  const text = document.getElementById('fs_import_text').value.trim();
+  if (!text) { toast('请先粘贴文本内容', 'error'); return; }
+
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  let name = '', version = '', description = '', io = '', rules = '', exceptions = '', acceptance = '';
+
+  // 提取版本号
+  const verMatch = text.match(/[vV](\d+\.\d+(?:\.\d+)?)/);
+  if (verMatch) version = verMatch[0];
+
+  // 第一行通常是标题
+  if (lines.length > 0) {
+    name = lines[0].replace(/^[#\-\*\d\.\s]+/, '').slice(0, 50);
+  }
+
+  // 分段提取
+  let currentSection = '';
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    if (/功能描述|功能说明|概述|简介/.test(line)) { currentSection = 'desc'; continue; }
+    if (/输入.*输出|输入\/输出|输入输出|Input|Output/.test(line)) { currentSection = 'io'; continue; }
+    if (/业务规则|功能规则|逻辑|条件/.test(line)) { currentSection = 'rules'; continue; }
+    if (/异常|错误|失败|容错/.test(line)) { currentSection = 'exceptions'; continue; }
+    if (/验收标准|通过标准|测试通过/.test(line)) { currentSection = 'acceptance'; continue; }
+
+    if (currentSection === 'desc') description += line + '\n';
+    else if (currentSection === 'io') io += line + '\n';
+    else if (currentSection === 'rules') rules += line + '\n';
+    else if (currentSection === 'exceptions') exceptions += line + '\n';
+    else if (currentSection === 'acceptance') acceptance += line + '\n';
+  }
+
+  // 如果没提取到，整段作为描述
+  if (!description && !io && !rules) {
+    description = text.slice(0, 500);
+  }
+
+  // 填充到表单
+  if (name && !document.getElementById('fs_name').value) document.getElementById('fs_name').value = name;
+  if (version && !document.getElementById('fs_version').value) document.getElementById('fs_version').value = version;
+  if (description.trim()) document.getElementById('fs_description').value = description.trim();
+  if (io.trim()) document.getElementById('fs_io').value = io.trim();
+  if (rules.trim()) document.getElementById('fs_rules').value = rules.trim();
+  if (exceptions.trim()) document.getElementById('fs_exceptions').value = exceptions.trim();
+  if (acceptance.trim()) document.getElementById('fs_acceptance').value = acceptance.trim();
+
+  toast('解析完成，已自动填充字段');
+}
+
+async function saveFeatureSpec() {
+  const name = document.getElementById('fs_name').value.trim();
+  if (!name) { toast('请填写功能名称', 'error'); return; }
+  const data = {
+    name,
+    version: document.getElementById('fs_version').value.trim(),
+    owner: document.getElementById('fs_owner').value.trim(),
+    status: document.getElementById('fs_status').value,
+    description: document.getElementById('fs_description').value,
+    io: document.getElementById('fs_io').value,
+    rules: document.getElementById('fs_rules').value,
+    exceptions: document.getElementById('fs_exceptions').value,
+    acceptance: document.getElementById('fs_acceptance').value,
+    notes: document.getElementById('fs_notes').value,
+    updatedAt: Date.now()
+  };
+  try {
+    if (editFeatureSpecId) {
+      const old = await dbGet('featurespec', editFeatureSpecId);
+      data.id = editFeatureSpecId;
+      data.createdAt = old.createdAt;
+      await dbPut('featurespec', data);
+    } else {
+      data.createdAt = Date.now();
+      await dbAdd('featurespec', data);
+    }
+    await loadFeatureSpecs();
+    toast('保存成功');
+    switchView('featurespec');
+  } catch (e) {
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
+function editFeatureSpec(id) {
+  const fs = currentFeatureSpecs.find(f => f.id === id);
+  if (fs) renderFeatureSpecForm(fs);
+}
+
+async function deleteFeatureSpec(id) {
+  if (!confirm('确定删除这条功能规格书吗？')) return;
+  await dbDelete('featurespec', id);
+  await loadFeatureSpecs();
+  toast('已删除');
+  switchView('featurespec');
+}
+
+// ==================== UI 走查模块 ====================
+let currentUIReviews = [];
+let editUIReviewId = null;
+
+const UI_SEVERITY = {
+  blocker: { label: '阻塞', cls: 'badge-fatal' },
+  major: { label: '严重', cls: 'badge-critical' },
+  minor: { label: '一般', cls: 'badge-normal' },
+  trivial: { label: '建议', cls: 'badge-suggestion' }
+};
+
+async function loadUIReviews() {
+  currentUIReviews = await dbGetAll('uireview');
+  currentUIReviews.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+function renderUIReviewListView() {
+  document.getElementById('pageTitle').textContent = 'UI 走查';
+  document.getElementById('pageSubtitle').textContent = `共 ${currentUIReviews.length} 条走查记录`;
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-primary" onclick="switchView('uireviewNew')">+ 新建走查</button>
+  `;
+  const content = document.getElementById('content');
+  if (currentUIReviews.length === 0) {
+    content.innerHTML = `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <p>还没有 UI 走查记录，点击右上角"新建走查"开始</p>
+    </div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col style="width:80px"><col style="width:180px"><col style="width:120px">
+          <col style="width:100px"><col style="width:100px"><col style="width:120px"><col style="width:100px">
+        </colgroup>
+        <thead><tr>
+          <th>编号</th><th>页面 / 模块</th><th>问题描述</th>
+          <th>严重程度</th><th>状态</th><th>走查人</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${currentUIReviews.map(ui => {
+            const sev = UI_SEVERITY[ui.severity] || UI_SEVERITY.minor;
+            return `<tr>
+              <td style="font-weight:600;color:var(--text-secondary)">UI-${String(ui.id).padStart(3,'0')}</td>
+              <td style="font-weight:500">${escapeHtml(ui.page)}</td>
+              <td title="${escapeHtml(ui.issue)}" style="color:var(--text-secondary)">${escapeHtml(ui.issue)}</td>
+              <td><span class="badge ${sev.cls}">${sev.label}</span></td>
+              <td><span class="badge ${ui.status === 'fixed' ? 'badge-status-resolved' : 'badge-status-new'}">${ui.status === 'fixed' ? '已修复' : ui.status === 'processing' ? '处理中' : '待处理'}</span></td>
+              <td>${escapeHtml(ui.reviewer) || '-'}</td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="editUIReview(${ui.id})">编辑</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteUIReview(${ui.id})">删除</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderUIReviewForm(ui = null) {
+  editUIReviewId = ui ? ui.id : null;
+  document.getElementById('pageTitle').textContent = ui ? '编辑UI走查' : '新建UI走查';
+  document.getElementById('pageSubtitle').textContent = '记录APP UI设计稿与实际效果的差异';
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="switchView('uireview')">取消</button>
+    <button class="btn btn-primary" onclick="saveUIReview()">保存走查</button>
+  `;
+  const u = ui || {};
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">页面 / 模块<span class="req">*</span></label>
+          <input class="form-input" id="ui_page" placeholder="如：登录页 / 设备列表" value="${escapeHtml(u.page||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">走查人</label>
+          <input class="form-input" id="ui_reviewer" placeholder="走查人姓名" value="${escapeHtml(u.reviewer||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">严重程度</label>
+          <select class="form-select" id="ui_severity">
+            ${Object.entries(UI_SEVERITY).map(([k,v]) => `<option value="${k}" ${(u.severity||'minor')===k?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">状态</label>
+          <select class="form-select" id="ui_status">
+            <option value="pending" ${(u.status||'pending')==='pending'?'selected':''}>待处理</option>
+            <option value="processing" ${u.status==='processing'?'selected':''}>处理中</option>
+            <option value="fixed" ${u.status==='fixed'?'selected':''}>已修复</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">问题描述</label>
+          <textarea class="form-textarea" id="ui_issue" placeholder="如：按钮间距与设计稿不一致，字号偏小...">${escapeHtml(u.issue||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">设计稿要求</label>
+          <textarea class="form-textarea" id="ui_designSpec" placeholder="设计稿中的标准要求...">${escapeHtml(u.designSpec||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">实际效果</label>
+          <textarea class="form-textarea" id="ui_actual" placeholder="实际实现的效果...">${escapeHtml(u.actual||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" id="ui_notes" placeholder="补充说明...">${escapeHtml(u.notes||'')}</textarea>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveUIReview() {
+  const page = document.getElementById('ui_page').value.trim();
+  if (!page) { toast('请填写页面/模块名称', 'error'); return; }
+  const data = {
+    page,
+    reviewer: document.getElementById('ui_reviewer').value.trim(),
+    severity: document.getElementById('ui_severity').value,
+    status: document.getElementById('ui_status').value,
+    issue: document.getElementById('ui_issue').value,
+    designSpec: document.getElementById('ui_designSpec').value,
+    actual: document.getElementById('ui_actual').value,
+    notes: document.getElementById('ui_notes').value,
+    updatedAt: Date.now()
+  };
+  try {
+    if (editUIReviewId) {
+      const old = await dbGet('uireview', editUIReviewId);
+      data.id = editUIReviewId;
+      data.createdAt = old.createdAt;
+      await dbPut('uireview', data);
+    } else {
+      data.createdAt = Date.now();
+      await dbAdd('uireview', data);
+    }
+    await loadUIReviews();
+    toast('保存成功');
+    switchView('uireview');
+  } catch (e) {
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
+function editUIReview(id) {
+  const ui = currentUIReviews.find(u => u.id === id);
+  if (ui) renderUIReviewForm(ui);
+}
+
+async function deleteUIReview(id) {
+  if (!confirm('确定删除这条UI走查记录吗？')) return;
+  await dbDelete('uireview', id);
+  await loadUIReviews();
+  toast('已删除');
+  switchView('uireview');
+}
+
+// ==================== 测试脚本 / 工程模块 ====================
+let currentScripts = [];
+let editScriptId = null;
+
+const SCRIPT_TYPE = {
+  python: { label: 'Python 脚本', cls: 'badge-type-hardware' },
+  shell: { label: 'Shell 脚本', cls: 'badge-type-firmware' },
+  xcode: { label: 'Xcode Demo 工程', cls: 'badge-type-app' },
+  android: { label: 'Android Demo 工程', cls: 'badge-type-compat' },
+  cpp: { label: 'C++ 测试程序', cls: 'badge-type-other' },
+  other: { label: '其他', cls: 'badge-type-other' }
+};
+
+async function loadScripts() {
+  currentScripts = await dbGetAll('scripts');
+  currentScripts.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+}
+
+function renderScriptListView() {
+  document.getElementById('pageTitle').textContent = '测试脚本 / 工程';
+  document.getElementById('pageSubtitle').textContent = `共 ${currentScripts.length} 个脚本或工程`;
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-primary" onclick="switchView('scriptNew')">+ 新建脚本</button>
+  `;
+  const content = document.getElementById('content');
+  if (currentScripts.length === 0) {
+    content.innerHTML = `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+      <p>还没有测试脚本记录，点击右上角"新建脚本"开始</p>
+    </div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col style="width:180px"><col style="width:130px"><col style="width:150px">
+          <col style="width:120px"><col style="width:200px"><col style="width:100px"><col style="width:100px">
+        </colgroup>
+        <thead><tr>
+          <th>脚本名称</th><th>类型</th><th>关联模块</th>
+          <th>负责人</th><th>路径 / 链接</th><th>更新时间</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${currentScripts.map(s => {
+            const tp = SCRIPT_TYPE[s.type] || SCRIPT_TYPE.other;
+            return `<tr>
+              <td style="font-weight:600">${escapeHtml(s.name)}</td>
+              <td><span class="badge ${tp.cls}">${tp.label}</span></td>
+              <td>${escapeHtml(s.module) || '-'}</td>
+              <td>${escapeHtml(s.owner) || '-'}</td>
+              <td title="${escapeHtml(s.path)}" style="font-family:monospace;font-size:12px;color:var(--accent);cursor:pointer" onclick="copyText('${escapeHtml(s.path)}')">${escapeHtml(s.path) || '-'}</td>
+              <td style="color:var(--text-secondary)">${formatDate(s.updatedAt || s.createdAt)}</td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="editScript(${s.id})">编辑</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteScript(${s.id})">删除</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderScriptForm(s = null) {
+  editScriptId = s ? s.id : null;
+  document.getElementById('pageTitle').textContent = s ? '编辑测试脚本' : '新建测试脚本';
+  document.getElementById('pageSubtitle').textContent = '管理自动化测试脚本、Xcode Demo 工程等';
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="switchView('scripts')">取消</button>
+    <button class="btn btn-primary" onclick="saveScript()">保存脚本</button>
+  `;
+  const sc = s || {};
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">脚本名称<span class="req">*</span></label>
+          <input class="form-input" id="sc_name" placeholder="如：蓝牙连接自动化测试" value="${escapeHtml(sc.name||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">脚本类型</label>
+          <select class="form-select" id="sc_type">
+            ${Object.entries(SCRIPT_TYPE).map(([k,v]) => `<option value="${k}" ${(sc.type||'python')===k?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">关联模块</label>
+          <input class="form-input" id="sc_module" placeholder="如：蓝牙 / 电源管理" value="${escapeHtml(sc.module||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">负责人</label>
+          <input class="form-input" id="sc_owner" placeholder="开发/维护人" value="${escapeHtml(sc.owner||'')}">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">路径 / 仓库链接</label>
+          <input class="form-input" id="sc_path" placeholder="如：/Users/xxx/Projects/bt_test 或 https://github.com/xxx" value="${escapeHtml(sc.path||'')}">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">功能描述</label>
+          <textarea class="form-textarea" id="sc_description" placeholder="这个脚本做什么、怎么运行...">${escapeHtml(sc.description||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">运行方式 / 依赖</label>
+          <textarea class="form-textarea" id="sc_usage" placeholder="如：python3 bt_test.py --device xx&#10;依赖：pyserial, bleak...">${escapeHtml(sc.usage||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" id="sc_notes" placeholder="补充说明...">${escapeHtml(sc.notes||'')}</textarea>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveScript() {
+  const name = document.getElementById('sc_name').value.trim();
+  if (!name) { toast('请填写脚本名称', 'error'); return; }
+  const data = {
+    name,
+    type: document.getElementById('sc_type').value,
+    module: document.getElementById('sc_module').value.trim(),
+    owner: document.getElementById('sc_owner').value.trim(),
+    path: document.getElementById('sc_path').value.trim(),
+    description: document.getElementById('sc_description').value,
+    usage: document.getElementById('sc_usage').value,
+    notes: document.getElementById('sc_notes').value,
+    updatedAt: Date.now()
+  };
+  try {
+    if (editScriptId) {
+      const old = await dbGet('scripts', editScriptId);
+      data.id = editScriptId;
+      data.createdAt = old.createdAt;
+      await dbPut('scripts', data);
+    } else {
+      data.createdAt = Date.now();
+      await dbAdd('scripts', data);
+    }
+    await loadScripts();
+    toast('保存成功');
+    switchView('scripts');
+  } catch (e) {
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
+function editScript(id) {
+  const s = currentScripts.find(x => x.id === id);
+  if (s) renderScriptForm(s);
+}
+
+async function deleteScript(id) {
+  if (!confirm('确定删除这条脚本记录吗？')) return;
+  await dbDelete('scripts', id);
+  await loadScripts();
+  toast('已删除');
+  switchView('scripts');
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('已复制到剪贴板'));
+}
+
+// ==================== AI 助手模块 ====================
+function renderAIAssistantView() {
+  document.getElementById('pageTitle').textContent = '效率工具';
+  document.getElementById('pageSubtitle').textContent = '测试效率工具集';
+  document.getElementById('headerActions').innerHTML = '';
+
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- 测试用例生成器 -->
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:15px;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;background:var(--accent);border-radius:50%"></span>
+          测试用例生成器
+        </h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">输入功能描述，自动生成标准测试用例模板</p>
+        <div class="form-group" style="margin-bottom:12px">
+          <input class="form-input" id="ai_tc_feature" placeholder="如：设备蓝牙自动连接">
+        </div>
+        <button class="btn btn-primary" onclick="generateTestCaseTemplate()" style="width:100%">生成用例模板</button>
+        <div id="ai_tc_result" style="margin-top:16px;display:none">
+          <div style="background:var(--main-bg);border-radius:8px;padding:16px;font-size:13px;white-space:pre-wrap;line-height:1.6;max-height:300px;overflow-y:auto" id="ai_tc_output"></div>
+          <button class="btn btn-secondary btn-sm" onclick="copyText(document.getElementById('ai_tc_output').textContent)" style="margin-top:8px">复制到剪贴板</button>
+        </div>
+      </div>
+
+      <!-- Bug 描述生成器 -->
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:15px;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;background:var(--danger);border-radius:50%"></span>
+          Bug 报告生成器
+        </h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">输入现象描述，生成标准格式的 Bug 报告</p>
+        <div class="form-group" style="margin-bottom:12px">
+          <textarea class="form-textarea" id="ai_bug_desc" placeholder="如：开机后蓝牙一直搜不到设备，重启三次有两次复现"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="generateBugTemplate()" style="width:100%">生成 Bug 报告</button>
+        <div id="ai_bug_result" style="margin-top:16px;display:none">
+          <div style="background:var(--main-bg);border-radius:8px;padding:16px;font-size:13px;white-space:pre-wrap;line-height:1.6;max-height:300px;overflow-y:auto" id="ai_bug_output"></div>
+          <button class="btn btn-secondary btn-sm" onclick="copyText(document.getElementById('ai_bug_output').textContent)" style="margin-top:8px">复制到剪贴板</button>
+        </div>
+      </div>
+
+      <!-- 测试点检查清单 -->
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:15px;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;background:var(--success);border-radius:50%"></span>
+          硬件交互测试 Checklist
+        </h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">新设备/固件测试时逐项核对，防止漏测</p>
+        <div style="font-size:13px;line-height:2" id="checklist_content">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> 开关机正常，无死机/花屏</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> 蓝牙/WiFi 配对连接稳定</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> 传感器数据读取正常（陀螺仪/加速度/温湿度）</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> 充电功能正常（有线/无线）</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> APP 与设备交互实时同步</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> 固件 OTA 升级成功，无变砖</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> 长时间运行无发热异常</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> 异常断电后恢复正常</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> 多设备并发连接无冲突</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> 低电量报警与自动关机正常</label>
+        </div>
+      </div>
+
+      <!-- 常用查询快捷入口 -->
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:15px;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;background:var(--warning);border-radius:50%"></span>
+          常用工具速查
+        </h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">测试中高频使用的命令和工具</p>
+        <div style="font-size:13px;line-height:1.8">
+          <div style="padding:8px 12px;background:var(--main-bg);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+            <span>蓝牙扫描调试</span>
+            <code style="font-size:12px;color:var(--accent)">bluetoothctl scan on</code>
+          </div>
+          <div style="padding:8px 12px;background:var(--main-bg);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+            <span>串口日志查看</span>
+            <code style="font-size:12px;color:var(--accent)">screen /dev/ttyUSB0 115200</code>
+          </div>
+          <div style="padding:8px 12px;background:var(--main-bg);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+            <span>ADB 设备列表</span>
+            <code style="font-size:12px;color:var(--accent)">adb devices -l</code>
+          </div>
+          <div style="padding:8px 12px;background:var(--main-bg);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+            <span>Wireshark 抓包过滤</span>
+            <code style="font-size:12px;color:var(--accent)">btamp || udp.port==5000</code>
+          </div>
+          <div style="padding:8px 12px;background:var(--main-bg);border-radius:6px;display:flex;justify-content:space-between;align-items:center">
+            <span>CPU/内存监控</span>
+            <code style="font-size:12px;color:var(--accent)">top -o cpu</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generateTestCaseTemplate() {
+  const feature = document.getElementById('ai_tc_feature').value.trim();
+  if (!feature) { toast('请先输入功能描述', 'error'); return; }
+  const template = `【用例标题】${feature} - 正常流程验证
+
+【所属模块】${feature.split(' ')[0] || '功能模块'}
+
+【优先级】P1 核心
+
+【前置条件】
+1. 设备已完成配对连接
+2. APP 已登录并进入设备控制页
+3. 设备电量 > 50%
+
+【测试步骤】
+1. 进入设备「${feature}」相关页面
+2. 执行正常操作流程
+3. 观察设备响应和 APP 状态变化
+4. 重复操作 3 次验证稳定性
+
+【预期结果】
+1. 操作响应时间 < 1 秒
+2. 设备状态与 APP 显示完全同步
+3. 无异常报错、无断连
+4. 重复操作无累积异常
+
+【异常场景用例】
+- 弱网环境下操作（预期：延迟可接受，最终同步成功）
+- 操作过程中断连（预期：重连后状态恢复一致）
+- 连续快速操作 10 次（预期：不崩溃，最终状态正确）`;
+
+  document.getElementById('ai_tc_result').style.display = 'block';
+  document.getElementById('ai_tc_output').textContent = template;
+}
+
+function generateBugTemplate() {
+  const desc = document.getElementById('ai_bug_desc').value.trim();
+  if (!desc) { toast('请先输入现象描述', 'error'); return; }
+  const template = `【问题标题】${desc.length > 30 ? desc.slice(0, 30) + '...' : desc}
+
+【问题现象】
+${desc}
+
+【复现步骤】
+1. （待补充：设备初始状态）
+2. （待补充：执行的操作）
+3. （待补充：观察到的现象）
+
+【复现概率】
+待补充（如：3次复现2次 / 必现 / 偶现）
+
+【预期结果】
+待补充
+
+【实际结果】
+${desc}
+
+【环境信息】
+- 硬件型号：待补充
+- 固件版本：待补充
+- APP 版本：待补充
+- 手机系统：待补充
+
+【严重程度】建议：一般（请评估后调整）`;
+
+  document.getElementById('ai_bug_result').style.display = 'block';
+  document.getElementById('ai_bug_output').textContent = template;
+}
+
+// ==================== 用户管理模块 ====================
+function renderUserMgmtView() {
+  if (!currentUser || currentUser.role !== 'admin') {
+    toast('无权限访问', 'error');
+    switchView('stats');
+    return;
+  }
+  document.getElementById('pageTitle').textContent = '用户管理';
+  document.getElementById('pageSubtitle').textContent = `共 ${USERS.length} 个账号`;
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-primary" onclick="showAddUserModal()">+ 新建用户</button>
+  `;
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col style="width:120px"><col style="width:120px"><col style="width:100px">
+          <col style="width:180px"><col style="width:120px"><col style="width:120px">
+        </colgroup>
+        <thead><tr>
+          <th>账号</th><th>姓名</th><th>角色</th><th>邮箱</th><th>状态</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${USERS.map((u, i) => `
+            <tr>
+              <td style="font-weight:600">${escapeHtml(u.username)}</td>
+              <td>${escapeHtml(u.name)}</td>
+              <td><span class="badge ${ROLE_MAP[u.role].cls}">${ROLE_MAP[u.role].label}</span></td>
+              <td style="color:var(--text-secondary)">${escapeHtml(u.email || '-')}</td>
+              <td>${u.username === currentUser.username ? '<span class="badge badge-status-new">当前登录</span>' : '<span class="badge badge-status-closed">已启用</span>'}</td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="resetUserPassword(${i})">重置密码</button>
+                ${u.username !== currentUser.username ? `<button class="btn btn-sm btn-danger" onclick="deleteUser(${i})">删除</button>` : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function showAddUserModal() {
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.id = 'addUserModal';
+  mask.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <div style="font-size:16px;font-weight:600">新建用户</div>
+        <button class="modal-close" onclick="closeModal('addUserModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">账号<span class="req">*</span></label>
+          <input class="form-input" id="nu_username" placeholder="登录账号">
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">姓名<span class="req">*</span></label>
+          <input class="form-input" id="nu_name" placeholder="显示姓名">
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">角色</label>
+          <select class="form-select" id="nu_role">
+            ${Object.entries(ROLE_MAP).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">初始密码</label>
+          <input class="form-input" id="nu_password" placeholder="至少6位" value="123456">
+        </div>
+        <div class="form-group">
+          <label class="form-label">邮箱</label>
+          <input class="form-input" id="nu_email" placeholder="可选">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('addUserModal')">取消</button>
+        <button class="btn btn-primary" onclick="doAddUser()">创建</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+}
+
+function doAddUser() {
+  const username = document.getElementById('nu_username').value.trim();
+  const name = document.getElementById('nu_name').value.trim();
+  const role = document.getElementById('nu_role').value;
+  const password = document.getElementById('nu_password').value.trim();
+  const email = document.getElementById('nu_email').value.trim();
+  if (!username || !name) { toast('请填写账号和姓名', 'error'); return; }
+  if (USERS.find(u => u.username === username)) { toast('账号已存在', 'error'); return; }
+  if (password.length < 6) { toast('密码至少6位', 'error'); return; }
+  USERS.push({ username, name, role, password, email });
+  saveUsers();
+  closeModal('addUserModal');
+  toast('用户创建成功');
+  renderUserMgmtView();
+}
+
+function resetUserPassword(idx) {
+  const user = USERS[idx];
+  if (confirm(`确定重置用户「${user.name}」的密码为 123456 吗？`)) {
+    user.password = '123456';
+    saveUsers();
+    toast('密码已重置为 123456');
+  }
+}
+
+function deleteUser(idx) {
+  const user = USERS[idx];
+  if (confirm(`确定删除用户「${user.name}」吗？此操作不可恢复。`)) {
+    USERS.splice(idx, 1);
+    saveUsers();
+    toast('用户已删除');
+    renderUserMgmtView();
+  }
+}
+
+// ==================== 启动 ====================
+async function initApp() {
+  await initDB();
+  await loadBugs();
+  await loadTestCases();
+  await loadFirmware();
+  await loadFeatureSpecs();
+  await loadUIReviews();
+  await loadScripts();
+  updateAllBadges();
+  switchView('stats');
+}
+
+function updateAllBadges() {
+  document.getElementById('navCountBugs').textContent = currentBugs.length;
+  document.getElementById('navCountCases').textContent = currentTestCases.length;
+  document.getElementById('navCountFirmware').textContent = currentFirmwareList.length;
+  document.getElementById('navCountFeatures').textContent = currentFeatureSpecs.length;
+  document.getElementById('navCountUI').textContent = currentUIReviews.length;
+  document.getElementById('navCountScripts').textContent = currentScripts.length;
+}
+
+// 启动时先检查登录
+if (checkLogin()) {
+  document.getElementById('mainApp').style.display = 'flex';
+  initApp();
+} else {
+  showLogin();
+}
+</script>
+</body>
+</html>
