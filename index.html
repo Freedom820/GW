@@ -8,6 +8,8 @@
 <script src="https://fastly.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://fastly.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://fastly.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <style>
 /* ===== 基础重置 ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -462,6 +464,11 @@ tbody tr:last-child td { border-bottom: none; }
         <span>UI 走查</span>
         <span class="nav-badge" id="navCountUI">0</span>
       </div>
+      <div class="nav-item" data-view="compat" onclick="switchView('compat')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+        <span>系统适配</span>
+        <span class="nav-badge" id="navCountCompat">0</span>
+      </div>
       <div class="nav-section-title">自动化</div>
       <div class="nav-item" data-view="scripts" onclick="switchView('scripts')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
@@ -657,7 +664,7 @@ document.addEventListener('keydown', e => {
 
 // ==================== IndexedDB 封装 ====================
 const DB_NAME = 'test_bug_tracker';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 let db = null;
 
 function initDB() {
@@ -692,6 +699,11 @@ function initDB() {
       }
       if (!d.objectStoreNames.contains('scripts')) {
         d.createObjectStore('scripts', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!d.objectStoreNames.contains('compat')) {
+        const store = d.createObjectStore('compat', { keyPath: 'id', autoIncrement: true });
+        store.createIndex('os', 'os');
+        store.createIndex('status', 'status');
       }
     };
     req.onsuccess = (e) => { db = e.target.result; resolve(); };
@@ -824,6 +836,8 @@ function switchView(view, param) {
   else if (view === 'scriptNew') renderScriptForm();
   else if (view === 'aiassistant') renderAIAssistantView();
   else if (view === 'usermgmt') renderUserMgmtView();
+  else if (view === 'compat') renderCompatListView();
+  else if (view === 'compatNew') renderCompatForm();
 }
 
 // ==================== 列表视图 ====================
@@ -1764,7 +1778,15 @@ function renderFirmwareForm(fw = null) {
         <svg id="fwImportArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform .2s"><path d="M6 9l6 6 6-6"/></svg>
       </div>
       <div id="fwImportArea" style="display:none;margin-top:14px">
-        <textarea class="form-textarea" id="fw_import_text" style="min-height:120px" placeholder="在此粘贴固件更新日志全文..."></textarea>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fw_fileInput').click()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            上传文件导入
+          </button>
+          <span style="font-size:12px;color:var(--text-muted);align-self:center">支持 .txt / .md / .docx / .pdf / .csv</span>
+        </div>
+        <input type="file" id="fw_fileInput" accept=".txt,.md,.csv,.json,.docx,.pdf" style="display:none" onchange="handleFileUpload(this, 'fw_import_text')">
+        <textarea class="form-textarea" id="fw_import_text" style="min-height:120px" placeholder="在此粘贴固件更新日志全文，或点击上方按钮上传文件..."></textarea>
         <div style="margin-top:10px;display:flex;gap:8px">
           <button class="btn btn-primary btn-sm" onclick="parseFirmwareSpec()">智能解析填充</button>
           <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fw_import_text').value=''">清空</button>
@@ -1990,7 +2012,15 @@ function renderFeatureSpecForm(fs = null) {
         <svg id="importArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform .2s"><path d="M6 9l6 6 6-6"/></svg>
       </div>
       <div id="importArea" style="display:none;margin-top:14px">
-        <textarea class="form-textarea" id="fs_import_text" style="min-height:120px" placeholder="在此粘贴规格书/PRD的全文内容..."></textarea>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fs_fileInput').click()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            上传文件导入
+          </button>
+          <span style="font-size:12px;color:var(--text-muted);align-self:center">支持 .txt / .md / .docx / .pdf / .csv</span>
+        </div>
+        <input type="file" id="fs_fileInput" accept=".txt,.md,.csv,.json,.docx,.pdf" style="display:none" onchange="handleFileUpload(this, 'fs_import_text')">
+        <textarea class="form-textarea" id="fs_import_text" style="min-height:120px" placeholder="在此粘贴规格书/PRD的全文内容，或点击上方按钮上传文件..."></textarea>
         <div style="margin-top:10px;display:flex;gap:8px">
           <button class="btn btn-primary btn-sm" onclick="parseFeatureSpec()">智能解析填充</button>
           <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fs_import_text').value=''">清空</button>
@@ -2045,6 +2075,52 @@ function renderFeatureSpecForm(fs = null) {
       </div>
     </div>
   `;
+}
+
+// 文件上传处理：根据类型读取内容并填充到指定textarea
+async function handleFileUpload(input, targetTextareaId) {
+  const file = input.files[0];
+  if (!file) return;
+  showProgress('正在读取文件...');
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    let text = '';
+
+    if (['txt', 'md', 'csv', 'json'].includes(ext)) {
+      // 纯文本格式直接读取
+      text = await file.text();
+    } else if (ext === 'docx') {
+      // docx 用 mammoth 解析
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      text = result.value;
+    } else if (ext === 'pdf') {
+      // pdf 用 pdf.js 解析
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://fastly.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        fullText += content.items.map(item => item.str).join(' ') + '\n';
+      }
+      text = fullText;
+    } else {
+      toast('暂不支持该格式，请手动复制内容粘贴', 'error');
+      hideProgress();
+      return;
+    }
+
+    document.getElementById(targetTextareaId).value = text;
+    hideProgress();
+    toast(`已读取文件「${file.name}」，共 ${text.length} 字`);
+  } catch (e) {
+    hideProgress();
+    console.error(e);
+    toast('文件读取失败: ' + e.message, 'error');
+  }
+  input.value = ''; // 清空input，允许重复上传同一文件
 }
 
 // 导入区域展开/收起
@@ -2582,6 +2658,86 @@ function renderAIAssistantView() {
           </div>
         </div>
       </div>
+
+      <!-- JSON 格式化工具 -->
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:15px;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;background:#7c3aed;border-radius:50%"></span>
+          JSON 格式化
+        </h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">接口调试时格式化/压缩 JSON 数据</p>
+        <textarea class="form-textarea" id="json_input" style="min-height:80px" placeholder='{"name":"test","value":123}'></textarea>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="formatJson()">格式化</button>
+          <button class="btn btn-secondary btn-sm" onclick="minifyJson()">压缩</button>
+        </div>
+        <div id="json_result" style="margin-top:12px;display:none">
+          <div style="background:var(--main-bg);border-radius:8px;padding:12px;font-size:12px;white-space:pre-wrap;max-height:150px;overflow-y:auto;font-family:monospace" id="json_output"></div>
+          <button class="btn btn-secondary btn-sm" onclick="copyText(document.getElementById('json_output').textContent)" style="margin-top:6px">复制</button>
+        </div>
+      </div>
+
+      <!-- 时间戳转换 -->
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:15px;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;background:#0891b2;border-radius:50%"></span>
+          时间戳转换
+        </h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">日志时间戳与可读时间互转</p>
+        <div class="form-group" style="margin-bottom:10px">
+          <input class="form-input" id="ts_input" placeholder="如：1729488000 或 1729488000000">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="convertTimestamp()" style="width:100%">转换</button>
+        <div id="ts_result" style="margin-top:12px;font-size:13px;display:none">
+          <div style="padding:8px 12px;background:var(--main-bg);border-radius:6px;margin-bottom:6px" id="ts_date"></div>
+          <div style="padding:8px 12px;background:var(--main-bg);border-radius:6px" id="ts_ms"></div>
+        </div>
+      </div>
+
+      <!-- 测试数据生成器 -->
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:15px;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;background:#be185d;border-radius:50%"></span>
+          测试数据生成
+        </h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">快速生成测试用随机数据</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <button class="btn btn-secondary btn-sm" onclick="genPhone()">随机手机号</button>
+          <button class="btn btn-secondary btn-sm" onclick="genDeviceId()">设备ID</button>
+          <button class="btn btn-secondary btn-sm" onclick="genUUID()">UUID</button>
+          <button class="btn btn-secondary btn-sm" onclick="genIp()">随机IP</button>
+        </div>
+        <div style="background:var(--main-bg);border-radius:8px;padding:12px;font-size:13px;font-family:monospace;word-break:break-all" id="gen_output">点击上方按钮生成</div>
+      </div>
+
+      <!-- 缺陷统计计算器 -->
+      <div class="form-card" style="padding:24px">
+        <h3 style="font-size:15px;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;background:#d97706;border-radius:50%"></span>
+          缺陷统计计算器
+        </h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">快速计算缺陷率、修复率等指标</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary)">总用例数</label>
+            <input class="form-input" id="stat_total" type="number" value="100" style="margin-top:4px">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary)">发现缺陷数</label>
+            <input class="form-input" id="stat_bugs" type="number" value="5" style="margin-top:4px">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary)">已修复</label>
+            <input class="form-input" id="stat_fixed" type="number" value="4" style="margin-top:4px">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-secondary)">用例通过数</label>
+            <input class="form-input" id="stat_passed" type="number" value="95" style="margin-top:4px">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="calcStats()" style="width:100%">计算</button>
+        <div id="stat_result" style="margin-top:12px;font-size:13px;display:none"></div>
+      </div>
     </div>
   `;
 }
@@ -2653,6 +2809,114 @@ ${desc}
 
   document.getElementById('ai_bug_result').style.display = 'block';
   document.getElementById('ai_bug_output').textContent = template;
+}
+
+// ==================== 效率工具函数 ====================
+function formatJson() {
+  const input = document.getElementById('json_input').value.trim();
+  if (!input) { toast('请输入JSON内容', 'error'); return; }
+  try {
+    const parsed = JSON.parse(input);
+    const pretty = JSON.stringify(parsed, null, 2);
+    document.getElementById('json_output').textContent = pretty;
+    document.getElementById('json_result').style.display = 'block';
+    toast('格式化完成');
+  } catch (e) {
+    toast('JSON格式错误: ' + e.message, 'error');
+  }
+}
+
+function minifyJson() {
+  const input = document.getElementById('json_input').value.trim();
+  if (!input) { toast('请输入JSON内容', 'error'); return; }
+  try {
+    const parsed = JSON.parse(input);
+    const compact = JSON.stringify(parsed);
+    document.getElementById('json_output').textContent = compact;
+    document.getElementById('json_result').style.display = 'block';
+    toast('压缩完成');
+  } catch (e) {
+    toast('JSON格式错误: ' + e.message, 'error');
+  }
+}
+
+function convertTimestamp() {
+  const input = document.getElementById('ts_input').value.trim();
+  if (!input) { toast('请输入时间戳', 'error'); return; }
+  const ts = parseInt(input);
+  if (isNaN(ts)) { toast('时间戳格式错误', 'error'); return; }
+  // 自动判断是秒还是毫秒
+  const ms = ts < 1e12 ? ts * 1000 : ts;
+  const date = new Date(ms);
+  if (isNaN(date.getTime())) { toast('无效的时间戳', 'error'); return; }
+  const fmt = date.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('ts_date').innerHTML = `可读时间：<strong>${fmt}</strong>`;
+  document.getElementById('ts_ms').innerHTML = `毫秒时间戳：<strong>${ms}</strong> &nbsp;|&nbsp; 秒时间戳：<strong>${Math.floor(ms/1000)}</strong>`;
+  document.getElementById('ts_result').style.display = 'block';
+}
+
+function genPhone() {
+  const prefixes = ['130','131','132','135','136','137','138','139','150','151','152','158','159','186','187','188','189'];
+  const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+  let num = p;
+  for (let i = 0; i < 8; i++) num += Math.floor(Math.random() * 10);
+  document.getElementById('gen_output').textContent = num;
+}
+
+function genDeviceId() {
+  const chars = '0123456789abcdef';
+  let id = '';
+  for (let i = 0; i < 12; i++) id += chars[Math.floor(Math.random() * 16)];
+  document.getElementById('gen_output').textContent = id.toUpperCase();
+}
+
+function genUUID() {
+  let uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+  document.getElementById('gen_output').textContent = uuid;
+}
+
+function genIp() {
+  const ip = `${Math.floor(Math.random()*223)+1}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*254)+1}`;
+  document.getElementById('gen_output').textContent = ip;
+}
+
+function calcStats() {
+  const total = parseInt(document.getElementById('stat_total').value) || 0;
+  const bugs = parseInt(document.getElementById('stat_bugs').value) || 0;
+  const fixed = parseInt(document.getElementById('stat_fixed').value) || 0;
+  const passed = parseInt(document.getElementById('stat_passed').value) || 0;
+
+  if (total === 0) { toast('总用例数不能为0', 'error'); return; }
+
+  const bugRate = (bugs / total * 100).toFixed(1);
+  const fixRate = bugs > 0 ? (fixed / bugs * 100).toFixed(1) : 0;
+  const passRate = (passed / total * 100).toFixed(1);
+
+  const html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="padding:10px 12px;background:var(--main-bg);border-radius:8px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:var(--danger)">${bugRate}%</div>
+        <div style="font-size:11px;color:var(--text-secondary)">缺陷率</div>
+      </div>
+      <div style="padding:10px 12px;background:var(--main-bg);border-radius:8px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:var(--success)">${fixRate}%</div>
+        <div style="font-size:11px;color:var(--text-secondary)">修复率</div>
+      </div>
+      <div style="padding:10px 12px;background:var(--main-bg);border-radius:8px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:var(--accent)">${passRate}%</div>
+        <div style="font-size:11px;color:var(--text-secondary)">用例通过率</div>
+      </div>
+      <div style="padding:10px 12px;background:var(--main-bg);border-radius:8px;text-align:center">
+        <div style="font-size:20px;font-weight:700">${fixed}/${bugs}</div>
+        <div style="font-size:11px;color:var(--text-secondary)">已修/总缺陷</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('stat_result').innerHTML = html;
+  document.getElementById('stat_result').style.display = 'block';
 }
 
 // ==================== 用户管理模块 ====================
@@ -2776,6 +3040,177 @@ function deleteUser(idx) {
   }
 }
 
+// ==================== 系统适配模块 ====================
+let currentCompatList = [];
+let editCompatId = null;
+
+const COMPAT_OS = {
+  android: { label: 'Android', cls: 'badge-type-app' },
+  ios: { label: 'iOS', cls: 'badge-type-hardware' },
+  harmonyos: { label: 'HarmonyOS', cls: 'badge-type-firmware' },
+  other: { label: '其他', cls: 'badge-type-other' }
+};
+const COMPAT_STATUS = {
+  perfect: { label: '完美运行', cls: 'badge-status-resolved' },
+  compatible: { label: '基本兼容', cls: 'badge-status-new' },
+  issue: { label: '有已知问题', cls: 'badge-status-processing' },
+  incompatible: { label: '不兼容', cls: 'badge-fatal' }
+};
+
+async function loadCompat() {
+  currentCompatList = await dbGetAll('compat');
+  currentCompatList.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+}
+
+function renderCompatListView() {
+  document.getElementById('pageTitle').textContent = '系统适配';
+  document.getElementById('pageSubtitle').textContent = `共 ${currentCompatList.length} 个机型适配记录`;
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-primary" onclick="switchView('compatNew')">+ 新增适配</button>
+  `;
+  const content = document.getElementById('content');
+  if (currentCompatList.length === 0) {
+    content.innerHTML = `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+      <p>还没有系统适配记录，点击右上角"新增适配"开始</p>
+    </div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col style="width:150px"><col style="width:100px"><col style="width:100px">
+          <col style="width:120px"><col style="width:100px"><col style="width:200px">
+          <col style="width:100px"><col style="width:100px">
+        </colgroup>
+        <thead><tr>
+          <th>机型</th><th>系统</th><th>系统版本</th>
+          <th>品牌</th><th>适配状态</th><th>问题描述</th><th>测试人</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${currentCompatList.map(c => {
+            const os = COMPAT_OS[c.os] || COMPAT_OS.other;
+            const st = COMPAT_STATUS[c.status] || COMPAT_STATUS.compatible;
+            return `<tr>
+              <td style="font-weight:600">${escapeHtml(c.model)}</td>
+              <td><span class="badge ${os.cls}">${os.label}</span></td>
+              <td>${escapeHtml(c.osVersion) || '-'}</td>
+              <td>${escapeHtml(c.brand) || '-'}</td>
+              <td><span class="badge ${st.cls}">${st.label}</span></td>
+              <td title="${escapeHtml(c.issue)}" style="color:var(--text-secondary)">${escapeHtml(c.issue) || '-'}</td>
+              <td>${escapeHtml(c.tester) || '-'}</td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="editCompat(${c.id})">编辑</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteCompat(${c.id})">删除</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderCompatForm(c = null) {
+  editCompatId = c ? c.id : null;
+  document.getElementById('pageTitle').textContent = c ? '编辑适配记录' : '新增适配记录';
+  document.getElementById('pageSubtitle').textContent = '记录各手机系统/机型的APP适配情况';
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-secondary" onclick="switchView('compat')">取消</button>
+    <button class="btn btn-primary" onclick="saveCompat()">保存</button>
+  `;
+  const data = c || {};
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">机型名称<span class="req">*</span></label>
+          <input class="form-input" id="cm_model" placeholder="如：小米14 / iPhone 15 Pro / 华为Mate 60" value="${escapeHtml(data.model||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">系统类型</label>
+          <select class="form-select" id="cm_os">
+            ${Object.entries(COMPAT_OS).map(([k,v]) => `<option value="${k}" ${(data.os||'android')===k?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">系统版本</label>
+          <input class="form-input" id="cm_osVersion" placeholder="如：Android 14 / iOS 17 / HarmonyOS 4" value="${escapeHtml(data.osVersion||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">品牌</label>
+          <input class="form-input" id="cm_brand" placeholder="如：小米 / 苹果 / 华为 / 三星" value="${escapeHtml(data.brand||'')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">适配状态</label>
+          <select class="form-select" id="cm_status">
+            ${Object.entries(COMPAT_STATUS).map(([k,v]) => `<option value="${k}" ${(data.status||'compatible')===k?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">测试人</label>
+          <input class="form-input" id="cm_tester" placeholder="测试人姓名" value="${escapeHtml(data.tester||'')}">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">问题描述</label>
+          <textarea class="form-textarea" id="cm_issue" placeholder="如：蓝牙连接偶尔断开 / 相机权限申请闪退...">${escapeHtml(data.issue||'')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" id="cm_notes" placeholder="补充说明...">${escapeHtml(data.notes||'')}</textarea>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveCompat() {
+  const model = document.getElementById('cm_model').value.trim();
+  if (!model) { toast('请填写机型名称', 'error'); return; }
+  const data = {
+    model,
+    os: document.getElementById('cm_os').value,
+    osVersion: document.getElementById('cm_osVersion').value.trim(),
+    brand: document.getElementById('cm_brand').value.trim(),
+    status: document.getElementById('cm_status').value,
+    tester: document.getElementById('cm_tester').value.trim(),
+    issue: document.getElementById('cm_issue').value,
+    notes: document.getElementById('cm_notes').value,
+    updatedAt: Date.now()
+  };
+  try {
+    if (editCompatId) {
+      const old = await dbGet('compat', editCompatId);
+      data.id = editCompatId;
+      data.createdAt = old.createdAt;
+      await dbPut('compat', data);
+    } else {
+      data.createdAt = Date.now();
+      await dbAdd('compat', data);
+    }
+    await loadCompat();
+    toast('保存成功');
+    switchView('compat');
+  } catch (e) {
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
+function editCompat(id) {
+  const c = currentCompatList.find(x => x.id === id);
+  if (c) renderCompatForm(c);
+}
+
+async function deleteCompat(id) {
+  if (!confirm('确定删除这条适配记录吗？')) return;
+  await dbDelete('compat', id);
+  await loadCompat();
+  toast('已删除');
+  switchView('compat');
+}
+
 // ==================== 启动 ====================
 async function initApp() {
   await initDB();
@@ -2785,6 +3220,7 @@ async function initApp() {
   await loadFeatureSpecs();
   await loadUIReviews();
   await loadScripts();
+  await loadCompat();
   updateAllBadges();
   switchView('stats');
 }
@@ -2796,6 +3232,7 @@ function updateAllBadges() {
   document.getElementById('navCountFeatures').textContent = currentFeatureSpecs.length;
   document.getElementById('navCountUI').textContent = currentUIReviews.length;
   document.getElementById('navCountScripts').textContent = currentScripts.length;
+  document.getElementById('navCountCompat').textContent = currentCompatList.length;
 }
 
 // 启动时先检查登录
