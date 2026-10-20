@@ -642,6 +642,28 @@ tbody tr:last-child td {
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: none;
+  font-size: 18px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.modal-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 .modal-body {
   padding: 20px 24px;
@@ -4007,6 +4029,31 @@ if (checkLogin()) {
   }
   // 应用菜单权限
   applyPermissions();
+  
+  // 检查用户是否被禁用（从数据库重新查）
+  async function checkUserStatus() {
+    try {
+      const { data: user } = await sb
+        .from('users')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+      if (user && user.status === 'disabled') {
+        alert('你的账号已被禁用，请联系管理员');
+        doLogout();
+        return;
+      }
+      // 更新本地缓存的用户信息
+      if (user) {
+        currentUser = user;
+        sessionStorage.setItem('lens_current_user', JSON.stringify(user));
+      }
+    } catch (e) {
+      console.error('检查用户状态失败:', e);
+    }
+  }
+  checkUserStatus();
+  
   try {
     initApp();
   } catch (e) {
