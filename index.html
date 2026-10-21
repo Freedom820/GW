@@ -854,12 +854,6 @@ tbody tr:last-child td {
         <div class="user-name" id="userName">admin</div>
         <div class="user-role" id="userRole">管理员</div>
       </div>
-      <button class="logout-btn" onclick="showChangePasswordModal()" title="修改密码">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-      </button>
-      <button class="logout-btn" onclick="doLogout()" title="退出登录">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-      </button>
     </div>
   </aside>
 
@@ -869,10 +863,57 @@ tbody tr:last-child td {
         <div class="main-title" id="pageTitle">问题列表</div>
         <div class="main-subtitle" id="pageSubtitle">所有测试问题记录</div>
       </div>
-      <div class="header-actions" id="headerActions"></div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="header-actions" id="headerActions"></div>
+        <!-- 用户下拉菜单 -->
+        <div style="position:relative">
+          <div onclick="toggleUserDropdown()" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 12px;border-radius:6px;hover:background:#f1f5f9">
+            <div class="user-avatar" style="width:32px;height:32px;font-size:14px" id="headerUserAvatar">A</div>
+            <span id="headerUserName" style="font-size:14px;font-weight:500">admin</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div id="userDropdown" style="display:none;position:absolute;top:100%;right:0;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);min-width:160px;z-index:100;margin-top:4px">
+            <div onclick="showChangePasswordModal(); toggleUserDropdown()" style="padding:12px 16px;cursor:pointer;font-size:14px;hover:background:#f8fafc">
+              修改密码
+            </div>
+            <div style="height:1px;background:#e5e7eb"></div>
+            <div onclick="doLogout(); toggleUserDropdown()" style="padding:12px 16px;cursor:pointer;font-size:14px;color:#dc2626;hover:background:#fef2f2">
+              退出登录
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="content" id="content"></div>
   </main>
+</div>
+
+<!-- 右下角悬浮快捷按钮 -->
+<div style="position:fixed;bottom:24px;right:24px;z-index:1000">
+  <div id="quickActionsDropdown" style="display:none;position:absolute;bottom:70px;right:0;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:180px;overflow:hidden">
+    <div onclick="switchView('new'); toggleQuickActions()" style="padding:14px 20px;cursor:pointer;font-size:14px;hover:background:#f8fafc;display:flex;align-items:center;gap:10px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+      新建缺陷
+    </div>
+    <div style="height:1px;background:#e5e7eb"></div>
+    <div onclick="switchView('testcaseNew'); toggleQuickActions()" style="padding:14px 20px;cursor:pointer;font-size:14px;hover:background:#f8fafc;display:flex;align-items:center;gap:10px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      新建用例
+    </div>
+    <div style="height:1px;background:#e5e7eb"></div>
+    <div onclick="switchView('firmwareNew'); toggleQuickActions()" style="padding:14px 20px;cursor:pointer;font-size:14px;hover:background:#f8fafc;display:flex;align-items:center;gap:10px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+      新固件版本
+    </div>
+    <div style="height:1px;background:#e5e7eb"></div>
+    <div onclick="switchView('aiassistant'); toggleQuickActions()" style="padding:14px 20px;cursor:pointer;font-size:14px;hover:background:#f8fafc;display:flex;align-items:center;gap:10px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2H10a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/></svg>
+      效率工具
+    </div>
+  </div>
+  <button onclick="toggleQuickActions()" style="width:56px;height:56px;border-radius:50%;background:#3b82f6;color:#fff;border:none;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.4);display:flex;align-items:center;justify-content:center;transition:transform 0.2s">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
 </div>
 
 <!-- Toast 容器 -->
@@ -951,6 +992,9 @@ async function doLogin() {
     document.getElementById('userName').textContent = user.name;
     document.getElementById('userAvatar').textContent = user.name.charAt(0);
     document.getElementById('userRole').textContent = (ROLE_MAP[user.role] || {}).label || user.role;
+    // 更新右上角用户信息
+    document.getElementById('headerUserName').textContent = user.name;
+    document.getElementById('headerUserAvatar').textContent = user.name.charAt(0);
     // 管理员显示用户管理入口
     if (user.role === 'admin') {
       addUserManagementNav();
@@ -1071,6 +1115,32 @@ function showModal(contentHtml) {
   `;
   document.body.appendChild(mask);
 }
+
+function toggleQuickActions() {
+  const dropdown = document.getElementById('quickActionsDropdown');
+  dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+}
+
+// 点击页面其他地方关闭快捷菜单
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('quickActionsDropdown');
+  if (dropdown && dropdown.style.display === 'block' && !e.target.closest('#quickActionsDropdown') && !e.target.closest('button[onclick="toggleQuickActions()"]')) {
+    dropdown.style.display = 'none';
+  }
+});
+
+function toggleUserDropdown() {
+  const dropdown = document.getElementById('userDropdown');
+  dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+}
+
+// 点击页面其他地方关闭下拉菜单
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown && dropdown.style.display === 'block' && !e.target.closest('#userDropdown')) {
+    dropdown.style.display = 'none';
+  }
+});
 
 // 登录时检查用户是否被禁用
 async function checkUserDisabled(user) {
@@ -1479,23 +1549,24 @@ function renderTable() {
     return;
   }
   wrap.innerHTML = `
-    <table>
+    <table style="min-width:1250px">
       <colgroup>
-        <col style="width:70px"><col style="width:180px"><col style="width:110px">
+        <col style="width:50px"><col style="width:70px"><col style="width:180px"><col style="width:110px">
         <col style="width:90px"><col style="width:90px"><col style="width:90px">
         <col style="width:60px"><col style="width:140px"><col style="width:140px"><col style="width:160px">
       </colgroup>
       <thead><tr>
-        <th>编号</th><th>标题</th><th>硬件设备</th><th>类型</th>
+        <th>序号</th><th>编号</th><th>标题</th><th>硬件设备</th><th>类型</th>
         <th>严重程度</th><th>状态</th><th>附件</th><th>创建时间</th><th>更新时间</th><th>操作</th>
       </tr></thead>
       <tbody>
-        ${list.map(b => {
+        ${list.map((b, idx) => {
           const sev = SEVERITY_MAP[b.severity] || SEVERITY_MAP.normal;
           const st = STATUS_MAP[b.status] || STATUS_MAP.new;
           const tp = TYPE_MAP[b.type] || TYPE_MAP.other;
           const attCount = (b.attachmentIds || []).length;
           return `<tr onclick="switchView('detail', ${b.id})">
+            <td style="color:var(--text-secondary)">${idx + 1}</td>
             <td style="font-weight:600;color:var(--text-secondary)">BUG-${String(b.id).padStart(3,'0')}</td>
             <td title="${escapeHtml(b.title)}" style="font-weight:500">${escapeHtml(b.title)}</td>
             <td>${escapeHtml(b.device) || '<span style="color:var(--text-muted)">-</span>'}</td>
@@ -1506,6 +1577,7 @@ function renderTable() {
             <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(b.createdAt)}</td>
             <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(b.updatedAt || b.createdAt)}</td>
             <td onclick="event.stopPropagation()">
+              <button class="btn btn-sm btn-secondary" onclick="previewBug(${b.id})">预览</button>
               <button class="btn btn-sm btn-secondary" onclick="editBug(${b.id})">编辑</button>
               <button class="btn btn-sm btn-danger" onclick="deleteBug(${b.id})">删除</button>
             </td>
@@ -1692,16 +1764,41 @@ function renderAttachList() {
   if (!list) return;
   list.innerHTML = draftAttachments.map((a, i) => {
     const isImg = a.type.startsWith('image/');
+    const isVideo = a.type.startsWith('video/');
     const icon = isImg
       ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>'
       : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
-    return `<div class="attach-item">
+    return `<div class="attach-item" style="cursor:pointer" onclick="previewAttachment(${i})">
       <div class="icon">${icon}</div>
-      <div class="name">${escapeHtml(a.name)}</div>
+      <div class="name">${escapeHtml(a.name)}${isImg ? ' <span style="color:#0891b2;font-size:12px">(点击预览)</span>' : ''}${isVideo ? ' <span style="color:#7c3aed;font-size:12px">(点击播放)</span>' : ''}</div>
       <div class="size">${formatSize(a.size)}</div>
-      <div class="remove" onclick="removeAttach(${i})">×</div>
+      <div class="remove" onclick="event.stopPropagation(); removeAttach(${i})">×</div>
     </div>`;
   }).join('');
+}
+
+function previewAttachment(idx) {
+  const a = draftAttachments[idx];
+  if (!a || !a.blob) return;
+  const url = URL.createObjectURL(a.blob);
+  const isImg = a.type.startsWith('image/');
+  const isVideo = a.type.startsWith('video/');
+  
+  let content = '';
+  if (isImg) {
+    content = `<img src="${url}" style="max-width:100%;max-height:70vh;display:block;margin:0 auto">`;
+  } else if (isVideo) {
+    content = `<video src="${url}" controls style="max-width:100%;max-height:70vh;display:block;margin:0 auto"></video>`;
+  } else {
+    content = `<p style="text-align:center;color:#64748b;padding:40px">该文件类型暂不支持在线预览</p>`;
+  }
+  
+  showModal(`
+    <div style="text-align:center;margin-bottom:16px">
+      <strong>${escapeHtml(a.name)}</strong>
+    </div>
+    ${content}
+  `);
 }
 
 function removeAttach(idx) {
@@ -1767,6 +1864,58 @@ async function saveBug() {
 function editBug(id) {
   const bug = currentBugs.find(b => b.id === id);
   if (bug) renderNewForm(bug);
+}
+
+function previewBug(id) {
+  const b = currentBugs.find(x => x.id === id);
+  if (!b) return;
+  const sev = SEVERITY_MAP[b.severity] || SEVERITY_MAP.normal;
+  const st = STATUS_MAP[b.status] || STATUS_MAP.new;
+  const tp = TYPE_MAP[b.type] || TYPE_MAP.other;
+  
+  showModal(`
+    <div style="margin-bottom:16px">
+      <h3 style="margin:0 0 8px 0">${escapeHtml(b.title)}</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:#64748b">
+        <span>编号：BUG-${String(b.id).padStart(3,'0')}</span>
+        <span>类型：<span class="badge ${tp.cls}">${tp.label}</span></span>
+        <span>严重程度：<span class="badge ${sev.cls}">${sev.label}</span></span>
+        <span>状态：<span class="badge ${st.cls}">${st.label}</span></span>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>硬件设备：</strong> ${escapeHtml(b.device) || '-'}
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>固件版本：</strong> ${escapeHtml(b.firmware) || '-'}
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>APP版本：</strong> ${escapeHtml(b.appVersion) || '-'}
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>测试人：</strong> ${escapeHtml(b.tester) || '-'}
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>问题描述：</strong>
+      <p style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.description) || '-'}</p>
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>复现步骤：</strong>
+      <p style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.steps) || '-'}</p>
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>预期结果：</strong>
+      <p style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.expected) || '-'}</p>
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>实际结果：</strong>
+      <p style="margin:8px 0;padding:12px;background:#fef2f2;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.actual) || '-'}</p>
+    </div>
+    <div style="display:flex;gap:20px;font-size:13px;color:#64748b;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb">
+      <span>创建时间：${formatDate(b.createdAt)}</span>
+      <span>更新时间：${formatDate(b.updatedAt || b.createdAt)}</span>
+    </div>
+  `);
 }
 
 async function deleteBug(id) {
@@ -1864,10 +2013,6 @@ function renderStatsView() {
   document.getElementById('pageTitle').textContent = '工作台';
   document.getElementById('pageSubtitle').textContent = '全模块数据总览';
   document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-secondary" onclick="exportAllData()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-      导出全部数据
-    </button>
     <button class="btn btn-primary" onclick="switchView('new')">+ 新建问题</button>
   `;
 
@@ -1895,22 +2040,26 @@ function renderStatsView() {
 
   content.innerHTML = `
     <!-- 模块总览卡片 -->
-    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:24px">
-      <div class="stat-card" style="cursor:pointer" onclick="switchView('list')">
-        <div class="stat-label">缺陷总数</div>
-        <div class="stat-value">${currentBugs.length}</div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:24px">
+      <div class="stat-card severity-suggestion" style="cursor:pointer" onclick="switchView('featurespec')">
+        <div class="stat-label">功能规格书</div>
+        <div class="stat-value">${currentFeatureSpecs.length}</div>
+      </div>
+      <div class="stat-card severity-normal" style="cursor:pointer" onclick="switchView('firmware')">
+        <div class="stat-label">固件规格书</div>
+        <div class="stat-value">${currentFirmwareList.length}</div>
       </div>
       <div class="stat-card severity-critical" style="cursor:pointer" onclick="switchView('testcases')">
         <div class="stat-label">测试用例</div>
         <div class="stat-value">${currentTestCases.length}</div>
       </div>
-      <div class="stat-card severity-normal" style="cursor:pointer" onclick="switchView('firmware')">
-        <div class="stat-label">固件版本</div>
-        <div class="stat-value">${currentFirmwareList.length}</div>
+      <div class="stat-card" style="cursor:pointer" onclick="switchView('list')">
+        <div class="stat-label">缺陷总数</div>
+        <div class="stat-value">${currentBugs.length}</div>
       </div>
-      <div class="stat-card severity-suggestion" style="cursor:pointer" onclick="switchView('featurespec')">
-        <div class="stat-label">功能模块</div>
-        <div class="stat-value">${currentFeatureSpecs.length}</div>
+      <div class="stat-card severity-issue" style="cursor:pointer" onclick="switchView('compat')">
+        <div class="stat-label">系统适配</div>
+        <div class="stat-value">${currentCompatList.length}</div>
       </div>
       <div class="stat-card severity-minor" style="cursor:pointer" onclick="switchView('uireview')">
         <div class="stat-label">UI 走查</div>
@@ -1935,29 +2084,6 @@ function renderStatsView() {
       <div class="form-card" style="padding:20px">
         <h3 style="font-size:14px;margin-bottom:16px;font-weight:600">缺陷类型分布</h3>
         <div id="chartType" style="height:260px"></div>
-      </div>
-    </div>
-
-    <!-- 快捷入口 -->
-    <div class="form-card" style="padding:24px">
-      <h3 style="font-size:14px;margin-bottom:16px;font-weight:600">快捷操作</h3>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
-        <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:8px;height:90px" onclick="switchView('new')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
-          新建缺陷
-        </button>
-        <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:8px;height:90px" onclick="switchView('testcaseNew')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          新建用例
-        </button>
-        <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:8px;height:90px" onclick="switchView('firmwareNew')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
-          新固件版本
-        </button>
-        <button class="btn btn-secondary" style="padding:16px;justify-content:center;flex-direction:column;gap:8px;height:90px" onclick="switchView('aiassistant')">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2H10a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/></svg>
-          效率工具
-        </button>
       </div>
     </div>
   `;
@@ -2171,29 +2297,35 @@ async function loadTestCases() {
   updateAllBadges();
 }
 
-let testCaseFilter = { keyword: '' };
-let testCaseSearchTimer = null;
+let testCaseFilter = { id: '', title: '', module: '', executor: '' };
 
-function onTestCaseSearchInput(value) {
-  testCaseFilter.keyword = value;
-  if (testCaseSearchTimer) clearTimeout(testCaseSearchTimer);
-  testCaseSearchTimer = setTimeout(() => {
-    renderTestCaseListView();
-  }, 300);
+function onTestCaseSearch() {
+  testCaseFilter.id = document.getElementById('tcSearchId').value;
+  testCaseFilter.title = document.getElementById('tcSearchTitle').value;
+  testCaseFilter.module = document.getElementById('tcSearchModule').value;
+  testCaseFilter.executor = document.getElementById('tcSearchExecutor').value;
+  renderTestCaseListView();
 }
 
 function renderTestCaseListView() {
   document.getElementById('pageTitle').textContent = '测试用例';
   
   let list = currentTestCases;
-  if (testCaseFilter.keyword) {
-    const kw = testCaseFilter.keyword.toLowerCase();
-    list = list.filter(tc => 
-      (tc.title && tc.title.toLowerCase().includes(kw)) ||
-      (tc.module && tc.module.toLowerCase().includes(kw)) ||
-      (tc.executor && tc.executor.toLowerCase().includes(kw)) ||
-      (tc.id && `TC-${String(tc.id).padStart(3,'0')}`.includes(kw))
-    );
+  if (testCaseFilter.id) {
+    const kw = testCaseFilter.id.toLowerCase();
+    list = list.filter(tc => tc.id && `TC-${String(tc.id).padStart(3,'0')}`.includes(kw));
+  }
+  if (testCaseFilter.title) {
+    const kw = testCaseFilter.title.toLowerCase();
+    list = list.filter(tc => tc.title && tc.title.toLowerCase().includes(kw));
+  }
+  if (testCaseFilter.module) {
+    const kw = testCaseFilter.module.toLowerCase();
+    list = list.filter(tc => tc.module && tc.module.toLowerCase().includes(kw));
+  }
+  if (testCaseFilter.executor) {
+    const kw = testCaseFilter.executor.toLowerCase();
+    list = list.filter(tc => tc.executor && tc.executor.toLowerCase().includes(kw));
   }
   
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 条用例`;
@@ -2210,15 +2342,19 @@ function renderTestCaseListView() {
   }
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="testCaseSearchInput" placeholder="搜索编号 / 标题 / 模块 / 执行人..." value="${escapeHtml(testCaseFilter.keyword)}" oninput="onTestCaseSearchInput(this.value)">
-      <button class="btn btn-secondary btn-sm" onclick="testCaseFilter.keyword = ''; renderTestCaseListView();">重置</button>
+      <input type="text" id="tcSearchId" placeholder="编号..." value="${escapeHtml(testCaseFilter.id)}">
+      <input type="text" id="tcSearchTitle" placeholder="用例标题..." value="${escapeHtml(testCaseFilter.title)}">
+      <input type="text" id="tcSearchModule" placeholder="所属模块..." value="${escapeHtml(testCaseFilter.module)}">
+      <input type="text" id="tcSearchExecutor" placeholder="执行人..." value="${escapeHtml(testCaseFilter.executor)}">
+      <button class="btn btn-primary btn-sm" onclick="onTestCaseSearch()">搜索</button>
+      <button class="btn btn-secondary btn-sm" onclick="testCaseFilter = { id: '', title: '', module: '', executor: '' }; renderTestCaseListView();">重置</button>
     </div>
     <div class="table-wrap">
-      <table>
+      <table style="min-width:1100px">
         <colgroup>
-          <col style="width:70px"><col style="width:160px"><col style="width:100px">
-          <col style="width:80px"><col style="width:80px"><col style="width:80px">
-          <col style="width:80px"><col style="width:140px"><col style="width:140px"><col style="width:180px">
+          <col style="width:90px"><col style="width:160px"><col style="width:110px">
+          <col style="width:100px"><col style="width:90px"><col style="width:100px">
+          <col style="width:80px"><col style="width:150px"><col style="width:150px"><col style="width:180px">
         </colgroup>
         <thead><tr>
           <th>编号</th><th>用例标题</th><th>所属模块</th><th>类型</th>
@@ -2402,29 +2538,35 @@ async function loadFirmware() {
   updateAllBadges();
 }
 
-let firmwareFilter = { keyword: '' };
-let firmwareSearchTimer = null;
+let firmwareFilter = { version: '', hardware: '', author: '', changelog: '' };
 
-function onFirmwareSearchInput(value) {
-  firmwareFilter.keyword = value;
-  if (firmwareSearchTimer) clearTimeout(firmwareSearchTimer);
-  firmwareSearchTimer = setTimeout(() => {
-    renderFirmwareListView();
-  }, 300);
+function onFirmwareSearch() {
+  firmwareFilter.version = document.getElementById('fwSearchVersion').value;
+  firmwareFilter.hardware = document.getElementById('fwSearchHardware').value;
+  firmwareFilter.author = document.getElementById('fwSearchAuthor').value;
+  firmwareFilter.changelog = document.getElementById('fwSearchChangelog').value;
+  renderFirmwareListView();
 }
 
 function renderFirmwareListView() {
   document.getElementById('pageTitle').textContent = '固件规格书';
   
   let list = currentFirmwareList;
-  if (firmwareFilter.keyword) {
-    const kw = firmwareFilter.keyword.toLowerCase();
-    list = list.filter(fw => 
-      (fw.version && fw.version.toLowerCase().includes(kw)) ||
-      (fw.hardware && fw.hardware.toLowerCase().includes(kw)) ||
-      (fw.author && fw.author.toLowerCase().includes(kw)) ||
-      (fw.changelog && fw.changelog.toLowerCase().includes(kw))
-    );
+  if (firmwareFilter.version) {
+    const kw = firmwareFilter.version.toLowerCase();
+    list = list.filter(fw => fw.version && fw.version.toLowerCase().includes(kw));
+  }
+  if (firmwareFilter.hardware) {
+    const kw = firmwareFilter.hardware.toLowerCase();
+    list = list.filter(fw => fw.hardware && fw.hardware.toLowerCase().includes(kw));
+  }
+  if (firmwareFilter.author) {
+    const kw = firmwareFilter.author.toLowerCase();
+    list = list.filter(fw => fw.author && fw.author.toLowerCase().includes(kw));
+  }
+  if (firmwareFilter.changelog) {
+    const kw = firmwareFilter.changelog.toLowerCase();
+    list = list.filter(fw => fw.changelog && fw.changelog.toLowerCase().includes(kw));
   }
   
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 个固件版本`;
@@ -2441,11 +2583,15 @@ function renderFirmwareListView() {
   }
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="firmwareSearchInput" placeholder="搜索版本 / 硬件 / 发布人 / 更新内容..." value="${escapeHtml(firmwareFilter.keyword)}" oninput="onFirmwareSearchInput(this.value)">
-      <button class="btn btn-secondary btn-sm" onclick="firmwareFilter.keyword = ''; renderFirmwareListView();">重置</button>
+      <input type="text" id="fwSearchVersion" placeholder="固件版本..." value="${escapeHtml(firmwareFilter.version)}">
+      <input type="text" id="fwSearchHardware" placeholder="硬件型号..." value="${escapeHtml(firmwareFilter.hardware)}">
+      <input type="text" id="fwSearchAuthor" placeholder="发布人..." value="${escapeHtml(firmwareFilter.author)}">
+      <input type="text" id="fwSearchChangelog" placeholder="更新内容..." value="${escapeHtml(firmwareFilter.changelog)}">
+      <button class="btn btn-primary btn-sm" onclick="onFirmwareSearch()">搜索</button>
+      <button class="btn btn-secondary btn-sm" onclick="firmwareFilter = { version: '', hardware: '', author: '', changelog: '' }; renderFirmwareListView();">重置</button>
     </div>
     <div class="table-wrap">
-      <table>
+      <table style="min-width:1100px">
         <colgroup>
           <col style="width:120px"><col style="width:150px"><col style="width:120px">
           <col style="width:100px"><col style="width:200px"><col style="width:100px"><col style="width:180px">
@@ -2694,66 +2840,75 @@ async function loadFeatureSpecs() {
   updateAllBadges();
 }
 
-let featureSpecFilter = { keyword: '' };
-let featureSpecSearchTimer = null;
+let featureSpecFilter = { name: '', owner: '', description: '' };
 
-function onFeatureSpecSearchInput(value) {
-  featureSpecFilter.keyword = value;
-  if (featureSpecSearchTimer) clearTimeout(featureSpecSearchTimer);
-  featureSpecSearchTimer = setTimeout(() => {
-    renderFeatureSpecListView();
-  }, 300);
+function onFeatureSpecSearch() {
+  featureSpecFilter.name = document.getElementById('fsSearchName').value;
+  featureSpecFilter.owner = document.getElementById('fsSearchOwner').value;
+  featureSpecFilter.description = document.getElementById('fsSearchDesc').value;
+  renderFeatureSpecListView();
 }
 
 function renderFeatureSpecListView() {
   document.getElementById('pageTitle').textContent = '功能规格书';
   
   let list = currentFeatureSpecs;
-  if (featureSpecFilter.keyword) {
-    const kw = featureSpecFilter.keyword.toLowerCase();
-    list = list.filter(fs => 
-      (fs.name && fs.name.toLowerCase().includes(kw)) ||
-      (fs.owner && fs.owner.toLowerCase().includes(kw)) ||
-      (fs.description && fs.description.toLowerCase().includes(kw))
-    );
+  if (featureSpecFilter.name) {
+    const kw = featureSpecFilter.name.toLowerCase();
+    list = list.filter(fs => fs.name && fs.name.toLowerCase().includes(kw));
+  }
+  if (featureSpecFilter.owner) {
+    const kw = featureSpecFilter.owner.toLowerCase();
+    list = list.filter(fs => fs.owner && fs.owner.toLowerCase().includes(kw));
+  }
+  if (featureSpecFilter.description) {
+    const kw = featureSpecFilter.description.toLowerCase();
+    list = list.filter(fs => fs.description && fs.description.toLowerCase().includes(kw));
   }
   
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 个功能模块`;
   document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-primary" onclick="switchView('featurespecNew')">+ 新建功能</button>
+    <button class="btn btn-primary" onclick="switchView('featurespecNew')">+ 新建</button>
   `;
   const content = document.getElementById('content');
   if (list.length === 0) {
     content.innerHTML = `<div class="form-card"><div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
-      <p>${currentFeatureSpecs.length === 0 ? '还没有功能规格书，点击右上角"新建功能"开始编写' : '没有匹配的记录'}</p>
+      <p>${currentFeatureSpecs.length === 0 ? '还没有记录，点击右上角"新建"开始编写' : '没有匹配的记录'}</p>
     </div></div>`;
     return;
   }
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="featureSpecSearchInput" placeholder="搜索功能名称 / 负责人 / 描述..." value="${escapeHtml(featureSpecFilter.keyword)}" oninput="onFeatureSpecSearchInput(this.value)">
-      <button class="btn btn-secondary btn-sm" onclick="featureSpecFilter.keyword = ''; renderFeatureSpecListView();">重置</button>
+      <input type="text" id="fsSearchName" placeholder="名称..." value="${escapeHtml(featureSpecFilter.name)}">
+      <input type="text" id="fsSearchOwner" placeholder="负责人..." value="${escapeHtml(featureSpecFilter.owner)}">
+      <input type="text" id="fsSearchDesc" placeholder="描述..." value="${escapeHtml(featureSpecFilter.description)}">
+      <button class="btn btn-primary btn-sm" onclick="onFeatureSpecSearch()">搜索</button>
+      <button class="btn btn-secondary btn-sm" onclick="featureSpecFilter = { name: '', owner: '', description: '' }; renderFeatureSpecListView();">重置</button>
     </div>
     <div class="table-wrap">
-      <table>
+      <table style="min-width:1050px">
         <colgroup>
-          <col style="width:180px"><col style="width:100px"><col style="width:120px">
-          <col style="width:200px"><col style="width:100px"><col style="width:100px"><col style="width:180px">
+          <col style="width:50px"><col style="width:150px"><col style="width:80px"><col style="width:90px">
+          <col style="width:150px"><col style="width:80px">
+          <col style="width:150px"><col style="width:150px"><col style="width:180px">
         </colgroup>
         <thead><tr>
-          <th>功能名称</th><th>版本</th><th>负责人</th>
-          <th>功能描述</th><th>状态</th><th>更新时间</th><th>操作</th>
+          <th>序号</th><th>名称</th><th>版本</th><th>负责人</th>
+          <th>描述</th><th>状态</th>
+          <th>创建时间</th><th>更新时间</th><th>操作</th>
         </tr></thead>
         <tbody>
-          ${list.map(fs => `
+          ${list.map((fs, idx) => `
             <tr>
+              <td style="color:var(--text-secondary)">${idx + 1}</td>
               <td style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="previewFeatureSpec(${fs.id})">${escapeHtml(fs.name)}</td>
               <td>${escapeHtml(fs.version) || '-'}</td>
               <td>${escapeHtml(fs.owner) || '-'}</td>
               <td title="${escapeHtml(fs.description)}" style="color:var(--text-secondary)">${escapeHtml(fs.description) || '-'}</td>
               <td><span class="badge ${fs.status === 'online' ? 'badge-status-resolved' : 'badge-status-processing'}">${fs.status === 'online' ? '已上线' : '开发中'}</span></td>
-              <td style="color:var(--text-secondary)">${formatDate(fs.updatedAt || fs.createdAt)}</td>
+              <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(fs.createdAt)}</td>
+              <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(fs.updatedAt || fs.createdAt)}</td>
               <td>
                 <button class="btn btn-sm btn-secondary" onclick="previewFeatureSpec(${fs.id})">预览</button>
                 <button class="btn btn-sm btn-secondary" onclick="editFeatureSpec(${fs.id})">编辑</button>
@@ -2796,7 +2951,7 @@ function previewFeatureSpec(id) {
 
 function renderFeatureSpecForm(fs = null) {
   editFeatureSpecId = fs ? fs.id : null;
-  document.getElementById('pageTitle').textContent = fs ? '编辑功能规格书' : '新建功能规格书';
+  document.getElementById('pageTitle').textContent = fs ? '编辑规格书' : '新建规格书';
   document.getElementById('pageSubtitle').textContent = '编写功能模块的输入输出、业务规则和验收标准';
   document.getElementById('headerActions').innerHTML = `
     <button class="btn btn-secondary" onclick="switchView('featurespec')">取消</button>
@@ -2886,6 +3041,7 @@ function renderFeatureSpecForm(fs = null) {
 async function handleFileUpload(input, targetTextareaId) {
   const file = input.files[0];
   if (!file) return;
+  const previewId = targetTextareaId.replace('_text', '_preview');
   showProgress('正在读取文件...');
   let text = '';
   let isHtml = false;
@@ -3005,7 +3161,6 @@ async function handleFileUpload(input, targetTextareaId) {
     document.getElementById(targetTextareaId).value = text;
 
     // 渲染到文档预览区
-    const previewId = targetTextareaId.replace('_text', '_preview');
     const previewEl = document.getElementById(previewId);
     if (previewEl) {
       let html = '';
@@ -3184,20 +3339,27 @@ async function loadUIReviews() {
   updateAllBadges();
 }
 
-let uiReviewFilter = { keyword: '' };
+let uiReviewFilter = { id: '', page: '', issue: '', reviewer: '' };
 
 function renderUIReviewListView() {
   document.getElementById('pageTitle').textContent = 'UI 走查';
   
   let list = currentUIReviews;
-  if (uiReviewFilter.keyword) {
-    const kw = uiReviewFilter.keyword.toLowerCase();
-    list = list.filter(ui => 
-      (ui.page && ui.page.toLowerCase().includes(kw)) ||
-      (ui.issue && ui.issue.toLowerCase().includes(kw)) ||
-      (ui.reviewer && ui.reviewer.toLowerCase().includes(kw)) ||
-      (ui.id && `UI-${String(ui.id).padStart(3,'0')}`.includes(kw))
-    );
+  if (uiReviewFilter.id) {
+    const kw = uiReviewFilter.id.toLowerCase();
+    list = list.filter(ui => ui.id && `UI-${String(ui.id).padStart(3,'0')}`.includes(kw));
+  }
+  if (uiReviewFilter.page) {
+    const kw = uiReviewFilter.page.toLowerCase();
+    list = list.filter(ui => ui.page && ui.page.toLowerCase().includes(kw));
+  }
+  if (uiReviewFilter.issue) {
+    const kw = uiReviewFilter.issue.toLowerCase();
+    list = list.filter(ui => ui.issue && ui.issue.toLowerCase().includes(kw));
+  }
+  if (uiReviewFilter.reviewer) {
+    const kw = uiReviewFilter.reviewer.toLowerCase();
+    list = list.filter(ui => ui.reviewer && ui.reviewer.toLowerCase().includes(kw));
   }
   
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 条走查记录`;
@@ -3214,12 +3376,15 @@ function renderUIReviewListView() {
   }
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="uiReviewSearchInput" placeholder="搜索编号 / 页面 / 问题 / 走查人..." value="${escapeHtml(uiReviewFilter.keyword)}">
+      <input type="text" id="uiSearchId" placeholder="编号..." value="${escapeHtml(uiReviewFilter.id)}">
+      <input type="text" id="uiSearchPage" placeholder="页面/模块..." value="${escapeHtml(uiReviewFilter.page)}">
+      <input type="text" id="uiSearchIssue" placeholder="问题描述..." value="${escapeHtml(uiReviewFilter.issue)}">
+      <input type="text" id="uiSearchReviewer" placeholder="走查人..." value="${escapeHtml(uiReviewFilter.reviewer)}">
       <button class="btn btn-primary btn-sm" onclick="onUIReviewSearch()">搜索</button>
-      <button class="btn btn-secondary btn-sm" onclick="uiReviewFilter.keyword = ''; renderUIReviewListView();">重置</button>
+      <button class="btn btn-secondary btn-sm" onclick="uiReviewFilter = { id: '', page: '', issue: '', reviewer: '' }; renderUIReviewListView();">重置</button>
     </div>
     <div class="table-wrap">
-      <table>
+      <table style="min-width:1100px">
         <colgroup>
           <col style="width:70px"><col style="width:150px"><col style="width:150px">
           <col style="width:80px"><col style="width:80px"><col style="width:80px">
@@ -3257,6 +3422,14 @@ function renderUIReviewListView() {
 
 function onUIReviewSearch() {
   uiReviewFilter.keyword = document.getElementById('uiReviewSearchInput').value;
+  renderUIReviewListView();
+}
+
+function onUIReviewSearch() {
+  uiReviewFilter.id = document.getElementById('uiSearchId').value;
+  uiReviewFilter.page = document.getElementById('uiSearchPage').value;
+  uiReviewFilter.issue = document.getElementById('uiSearchIssue').value;
+  uiReviewFilter.reviewer = document.getElementById('uiSearchReviewer').value;
   renderUIReviewListView();
 }
 
@@ -3434,11 +3607,11 @@ function renderScriptListView() {
       <button class="btn btn-secondary btn-sm" onclick="scriptFilter.keyword = ''; renderScriptListView();">重置</button>
     </div>
     <div class="table-wrap">
-      <table>
+      <table style="min-width:1200px">
         <colgroup>
-          <col style="width:150px"><col style="width:110px"><col style="width:120px">
-          <col style="width:90px"><col style="width:150px">
-          <col style="width:140px"><col style="width:140px"><col style="width:180px">
+          <col style="width:140px"><col style="width:140px"><col style="width:110px">
+          <col style="width:80px"><col style="width:140px">
+          <col style="width:150px"><col style="width:150px"><col style="width:180px">
         </colgroup>
         <thead><tr>
           <th>脚本名称</th><th>类型</th><th>关联模块</th>
@@ -3610,7 +3783,7 @@ function renderAIAssistantView() {
 
   const content = document.getElementById('content');
   content.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
       <!-- 测试用例生成器 -->
       <div class="form-card" style="padding:24px">
         <h3 style="font-size:15px;margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px">
@@ -3959,6 +4132,7 @@ function calcStats() {
 
 // ==================== 用户管理模块 ====================
 let currentUsers = [];
+let userFilter = { username: '', name: '', role: '', status: '' };
 
 async function renderUserMgmtView() {
   if (!currentUser || currentUser.role !== 'admin') {
@@ -3983,10 +4157,45 @@ async function renderUserMgmtView() {
     if (error) throw error;
     currentUsers = data || [];
 
-    document.getElementById('pageSubtitle').textContent = `共 ${currentUsers.length} 个账号`;
+    // 过滤用户
+    let list = currentUsers;
+    if (userFilter.username) {
+      const kw = userFilter.username.toLowerCase();
+      list = list.filter(u => u.username && u.username.toLowerCase().includes(kw));
+    }
+    if (userFilter.name) {
+      const kw = userFilter.name.toLowerCase();
+      list = list.filter(u => u.name && u.name.toLowerCase().includes(kw));
+    }
+    if (userFilter.role) {
+      list = list.filter(u => u.role === userFilter.role);
+    }
+    if (userFilter.status) {
+      list = list.filter(u => (u.status || 'active') === userFilter.status);
+    }
+
+    document.getElementById('pageSubtitle').textContent = `共 ${list.length} 个账号`;
     content.innerHTML = `
+      <div class="filter-bar">
+        <input type="text" id="userSearchUsername" placeholder="账号..." value="${escapeHtml(userFilter.username)}">
+        <input type="text" id="userSearchName" placeholder="姓名..." value="${escapeHtml(userFilter.name)}">
+        <select id="userSearchRole">
+          <option value="">全部角色</option>
+          <option value="admin" ${userFilter.role === 'admin' ? 'selected' : ''}>管理员</option>
+          <option value="tester" ${userFilter.role === 'tester' ? 'selected' : ''}>测试员</option>
+          <option value="dev" ${userFilter.role === 'dev' ? 'selected' : ''}>开发</option>
+          <option value="readonly" ${userFilter.role === 'readonly' ? 'selected' : ''}>只读</option>
+        </select>
+        <select id="userSearchStatus">
+          <option value="">全部状态</option>
+          <option value="active" ${userFilter.status === 'active' ? 'selected' : ''}>已启用</option>
+          <option value="disabled" ${userFilter.status === 'disabled' ? 'selected' : ''}>已禁用</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="onUserSearch()">搜索</button>
+        <button class="btn btn-secondary btn-sm" onclick="userFilter = { username: '', name: '', role: '', status: '' }; renderUserMgmtView();">重置</button>
+      </div>
       <div class="table-wrap">
-        <table>
+        <table style="min-width:900px">
           <colgroup>
             <col style="width:100px"><col style="width:100px"><col style="width:80px">
             <col style="width:100px"><col style="width:80px"><col style="width:160px">
@@ -3995,7 +4204,7 @@ async function renderUserMgmtView() {
             <th>账号</th><th>姓名</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th>
           </tr></thead>
           <tbody>
-            ${currentUsers.map((u) => `
+            ${list.map((u) => `
               <tr>
                 <td style="font-weight:600">${escapeHtml(u.username)}</td>
                 <td>${escapeHtml(u.name)}</td>
@@ -4091,6 +4300,14 @@ async function doAddUser() {
   } catch (e) {
     toast('创建失败: ' + e.message, 'error');
   }
+}
+
+function onUserSearch() {
+  userFilter.username = document.getElementById('userSearchUsername').value;
+  userFilter.name = document.getElementById('userSearchName').value;
+  userFilter.role = document.getElementById('userSearchRole').value;
+  userFilter.status = document.getElementById('userSearchStatus').value;
+  renderUserMgmtView();
 }
 
 async function resetUserPassword(userId) {
@@ -4344,11 +4561,11 @@ function renderCompatListView() {
       <button class="btn btn-secondary btn-sm" onclick="compatFilter.keyword = ''; renderCompatListView();">重置</button>
     </div>
     <div class="table-wrap">
-      <table>
+      <table style="min-width:1200px">
         <colgroup>
-          <col style="width:130px"><col style="width:80px"><col style="width:90px">
-          <col style="width:90px"><col style="width:90px"><col style="width:150px">
-          <col style="width:70px"><col style="width:140px"><col style="width:140px"><col style="width:180px">
+          <col style="width:120px"><col style="width:100px"><col style="width:90px">
+          <col style="width:80px"><col style="width:110px"><col style="width:150px">
+          <col style="width:70px"><col style="width:150px"><col style="width:150px"><col style="width:180px">
         </colgroup>
         <thead><tr>
           <th>机型</th><th>系统</th><th>系统版本</th>
