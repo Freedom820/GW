@@ -1439,7 +1439,6 @@ function toast(msg, type = 'success') {
 // 全局错误捕获，防止页面崩溃白屏
 window.addEventListener('error', function(e) {
   console.error('全局错误:', e.error);
-  toast('出现小问题，已自动恢复', 'error');
 });
 window.addEventListener('unhandledrejection', function(e) {
   console.error('未处理的Promise错误:', e.reason);
@@ -1544,7 +1543,8 @@ function switchView(view, param) {
 async function loadBugs() {
   currentBugs = await dbGetAll('bugs');
   currentBugs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  document.getElementById('navCountBugs').textContent = currentBugs.length;
+  const el = document.getElementById('navCountBugs');
+  if (el) el.textContent = currentBugs.length;
 }
 
 function renderListView() {
@@ -1568,7 +1568,7 @@ function renderListView() {
   const content = document.getElementById('content');
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="filterKeyword" placeholder="搜索标题 / 设备 / 描述..." value="${escapeHtml(filterState.keyword)}">
+      <input type="text" id="filterKeyword" placeholder="搜索标题 / 设备 / 描述" value="${escapeHtml(filterState.keyword)}">
       <select id="filterSeverity">
         <option value="">全部严重程度</option>
         ${Object.entries(SEVERITY_MAP).map(([k,v]) => `<option value="${k}" ${filterState.severity===k?'selected':''}>${v.label}</option>`).join('')}
@@ -1970,32 +1970,32 @@ function previewBug(id) {
       </div>
     </div>
     <div style="margin-bottom:12px">
-      <strong>硬件设备：</strong> ${escapeHtml(b.device) || '-'}
+      <strong>硬件设备：</strong> ${escapeHtml(b.device) || ''}
     </div>
     <div style="margin-bottom:12px">
-      <strong>固件版本：</strong> ${escapeHtml(b.firmware) || '-'}
+      <strong>固件版本：</strong> ${escapeHtml(b.firmware) || ''}
     </div>
     <div style="margin-bottom:12px">
-      <strong>APP版本：</strong> ${escapeHtml(b.appVersion) || '-'}
+      <strong>APP版本：</strong> ${escapeHtml(b.appVersion) || ''}
     </div>
     <div style="margin-bottom:12px">
-      <strong>测试人：</strong> ${escapeHtml(b.tester) || '-'}
+      <strong>测试人：</strong> ${escapeHtml(b.tester) || ''}
     </div>
     <div style="margin-bottom:12px">
       <strong>问题描述：</strong>
-      <p style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.description) || '-'}</p>
+      <p style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.description) || ''}</p>
     </div>
     <div style="margin-bottom:12px">
       <strong>复现步骤：</strong>
-      <p style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.steps) || '-'}</p>
+      <p style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.steps) || ''}</p>
     </div>
     <div style="margin-bottom:12px">
       <strong>预期结果：</strong>
-      <p style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.expected) || '-'}</p>
+      <p style="margin:8px 0;padding:12px;background:#f8fafc;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.expected) || ''}</p>
     </div>
     <div style="margin-bottom:12px">
       <strong>实际结果：</strong>
-      <p style="margin:8px 0;padding:12px;background:#fef2f2;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.actual) || '-'}</p>
+      <p style="margin:8px 0;padding:12px;background:#fef2f2;border-radius:4px;white-space:pre-wrap">${escapeHtml(b.actual) || ''}</p>
     </div>
     <div style="display:flex;gap:20px;font-size:13px;color:#64748b;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb">
       <span>创建时间：${formatDate(b.createdAt)}</span>
@@ -2068,23 +2068,23 @@ async function renderDetailView(id) {
       </div>
       <div class="detail-section">
         <h3>基本信息</h3>
-        <div class="detail-row"><span class="label">硬件设备</span><span class="value">${escapeHtml(bug.device) || '-'}</span></div>
-        <div class="detail-row"><span class="label">固件版本</span><span class="value">${escapeHtml(bug.firmware) || '-'}</span></div>
-        <div class="detail-row"><span class="label">APP版本</span><span class="value">${escapeHtml(bug.appVersion) || '-'}</span></div>
-        <div class="detail-row"><span class="label">测试人员</span><span class="value">${escapeHtml(bug.tester) || '-'}</span></div>
+        <div class="detail-row"><span class="label">硬件设备</span><span class="value">${escapeHtml(bug.device) || ''}</span></div>
+        <div class="detail-row"><span class="label">固件版本</span><span class="value">${escapeHtml(bug.firmware) || ''}</span></div>
+        <div class="detail-row"><span class="label">APP版本</span><span class="value">${escapeHtml(bug.appVersion) || ''}</span></div>
+        <div class="detail-row"><span class="label">测试人员</span><span class="value">${escapeHtml(bug.tester) || ''}</span></div>
         <div class="detail-row"><span class="label">创建时间</span><span class="value">${formatDate(bug.createdAt)}</span></div>
         ${bug.updatedAt ? `<div class="detail-row"><span class="label">更新时间</span><span class="value">${formatDate(bug.updatedAt)}</span></div>` : ''}
       </div>
       <div class="detail-section">
         <h3>问题描述</h3>
         <div class="detail-row"><span class="label">标题</span><span class="value" style="font-weight:600">${escapeHtml(bug.title)}</span></div>
-        <div class="detail-row"><span class="label">描述</span><span class="value">${escapeHtml(bug.description) || '-'}</span></div>
+        <div class="detail-row"><span class="label">描述</span><span class="value">${escapeHtml(bug.description) || ''}</span></div>
       </div>
       <div class="detail-section">
         <h3>复现步骤</h3>
-        <div class="detail-row"><span class="label">步骤</span><span class="value">${escapeHtml(bug.steps) || '-'}</span></div>
-        <div class="detail-row"><span class="label">预期结果</span><span class="value" style="color:var(--success)">${escapeHtml(bug.expected) || '-'}</span></div>
-        <div class="detail-row"><span class="label">实际结果</span><span class="value" style="color:var(--danger)">${escapeHtml(bug.actual) || '-'}</span></div>
+        <div class="detail-row"><span class="label">步骤</span><span class="value">${escapeHtml(bug.steps) || ''}</span></div>
+        <div class="detail-row"><span class="label">预期结果</span><span class="value" style="color:var(--success)">${escapeHtml(bug.expected) || ''}</span></div>
+        <div class="detail-row"><span class="label">实际结果</span><span class="value" style="color:var(--danger)">${escapeHtml(bug.actual) || ''}</span></div>
       </div>
       <div class="detail-section">
         <h3>附件</h3>
@@ -2428,10 +2428,10 @@ function renderTestCaseListView() {
   }
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="tcSearchId" placeholder="编号..." value="${escapeHtml(testCaseFilter.id)}">
-      <input type="text" id="tcSearchTitle" placeholder="用例标题..." value="${escapeHtml(testCaseFilter.title)}">
-      <input type="text" id="tcSearchModule" placeholder="所属模块..." value="${escapeHtml(testCaseFilter.module)}">
-      <input type="text" id="tcSearchExecutor" placeholder="执行人..." value="${escapeHtml(testCaseFilter.executor)}">
+      <input type="text" id="tcSearchId" placeholder="编号" value="${escapeHtml(testCaseFilter.id)}">
+      <input type="text" id="tcSearchTitle" placeholder="用例标题" value="${escapeHtml(testCaseFilter.title)}">
+      <input type="text" id="tcSearchModule" placeholder="所属模块" value="${escapeHtml(testCaseFilter.module)}">
+      <input type="text" id="tcSearchExecutor" placeholder="执行人" value="${escapeHtml(testCaseFilter.executor)}">
       <button class="btn btn-primary btn-sm" onclick="onTestCaseSearch()">搜索</button>
       <button class="btn btn-secondary btn-sm" onclick="testCaseFilter = { id: '', title: '', module: '', executor: '' }; renderTestCaseListView();">重置</button>
     </div>
@@ -2454,11 +2454,11 @@ function renderTestCaseListView() {
               <td style="color:var(--text-secondary)">${idx + 1}</td>
               <td style="font-weight:600;color:var(--text-secondary)">TC-${String(tc.id).padStart(3,'0')}</td>
               <td style="font-weight:500;cursor:pointer;color:var(--accent)" title="${escapeHtml(tc.title)}" onclick="previewTestCase(${tc.id})">${escapeHtml(tc.title)}</td>
-              <td>${escapeHtml(tc.module) || '-'}</td>
-              <td>${TC_TYPE[tc.type] || tc.type || '-'}</td>
+              <td>${escapeHtml(tc.module) || ''}</td>
+              <td>${TC_TYPE[tc.type] || tc.type || ''}</td>
               <td><span class="badge ${pr.cls}">${pr.label}</span></td>
               <td><span class="badge ${st.cls}">${st.label}</span></td>
-              <td>${escapeHtml(tc.executor) || '-'}</td>
+              <td>${escapeHtml(tc.executor) || ''}</td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(tc.createdAt)}</td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(tc.updatedAt || tc.createdAt)}</td>
               <td>
@@ -2490,16 +2490,16 @@ function previewTestCase(id) {
     <h3 style="margin-bottom:16px">${escapeHtml(tc.title)}</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">编号</div><div>TC-${String(tc.id).padStart(3,'0')}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">所属模块</div><div>${escapeHtml(tc.module) || '-'}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">类型</div><div>${TC_TYPE[tc.type] || tc.type || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">所属模块</div><div>${escapeHtml(tc.module) || ''}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">类型</div><div>${TC_TYPE[tc.type] || tc.type || ''}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">优先级</div><div><span class="badge ${pr.cls}">${pr.label}</span></div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">执行状态</div><div><span class="badge ${st.cls}">${st.label}</span></div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">执行人</div><div>${escapeHtml(tc.executor) || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">执行人</div><div>${escapeHtml(tc.executor) || ''}</div></div>
     </div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">前置条件</div><div style="white-space:pre-wrap">${escapeHtml(tc.precondition) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">测试步骤</div><div style="white-space:pre-wrap">${escapeHtml(tc.steps) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">预期结果</div><div style="white-space:pre-wrap">${escapeHtml(tc.expected) || '-'}</div></div>
-    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(tc.notes) || '-'}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">前置条件</div><div style="white-space:pre-wrap">${escapeHtml(tc.precondition) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">测试步骤</div><div style="white-space:pre-wrap">${escapeHtml(tc.steps) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">预期结果</div><div style="white-space:pre-wrap">${escapeHtml(tc.expected) || ''}</div></div>
+    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(tc.notes) || ''}</div></div>
   `);
 }
 
@@ -2670,10 +2670,10 @@ function renderFirmwareListView() {
   }
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="fwSearchVersion" placeholder="固件版本..." value="${escapeHtml(firmwareFilter.version)}">
-      <input type="text" id="fwSearchHardware" placeholder="硬件型号..." value="${escapeHtml(firmwareFilter.hardware)}">
-      <input type="text" id="fwSearchAuthor" placeholder="发布人..." value="${escapeHtml(firmwareFilter.author)}">
-      <input type="text" id="fwSearchChangelog" placeholder="更新内容..." value="${escapeHtml(firmwareFilter.changelog)}">
+      <input type="text" id="fwSearchVersion" placeholder="固件版本" value="${escapeHtml(firmwareFilter.version)}">
+      <input type="text" id="fwSearchHardware" placeholder="硬件型号" value="${escapeHtml(firmwareFilter.hardware)}">
+      <input type="text" id="fwSearchAuthor" placeholder="发布人" value="${escapeHtml(firmwareFilter.author)}">
+      <input type="text" id="fwSearchChangelog" placeholder="更新内容" value="${escapeHtml(firmwareFilter.changelog)}">
       <button class="btn btn-primary btn-sm" onclick="onFirmwareSearch()">搜索</button>
       <button class="btn btn-secondary btn-sm" onclick="firmwareFilter = { version: '', hardware: '', author: '', changelog: '' }; renderFirmwareListView();">重置</button>
     </div>
@@ -2692,10 +2692,10 @@ function renderFirmwareListView() {
             <tr>
               <td style="color:var(--text-secondary)">${idx + 1}</td>
               <td style="font-weight:600;color:var(--accent);cursor:pointer" onclick="previewFirmware(${fw.id})">${escapeHtml(fw.version)}</td>
-              <td>${escapeHtml(fw.hardware) || '-'}</td>
+              <td>${escapeHtml(fw.hardware) || ''}</td>
               <td style="color:var(--text-secondary)">${fw.releaseDate || formatDate(fw.createdAt)}</td>
-              <td>${escapeHtml(fw.author) || '-'}</td>
-              <td title="${escapeHtml(fw.changelog)}" style="color:var(--text-secondary)">${escapeHtml(fw.changelog) || '-'}</td>
+              <td>${escapeHtml(fw.author) || ''}</td>
+              <td title="${escapeHtml(fw.changelog)}" style="color:var(--text-secondary)">${escapeHtml(fw.changelog) || ''}</td>
               <td>${fw.fileSize ? formatSize(fw.fileSize) : '-'}</td>
               <td>
                 <button class="btn btn-sm btn-secondary" onclick="previewFirmware(${fw.id})">预览</button>
@@ -2723,16 +2723,16 @@ function previewFirmware(id) {
   showModal(`
     <h3 style="margin-bottom:16px">固件版本 ${escapeHtml(fw.version)}</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">硬件型号</div><div>${escapeHtml(fw.hardware) || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">硬件型号</div><div>${escapeHtml(fw.hardware) || ''}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">发布日期</div><div>${fw.releaseDate || formatDate(fw.createdAt)}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">发布人</div><div>${escapeHtml(fw.author) || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">发布人</div><div>${escapeHtml(fw.author) || ''}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">文件大小</div><div>${fw.fileSize ? formatSize(fw.fileSize) : '-'}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">MD5</div><div style="font-size:12px">${escapeHtml(fw.md5) || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">MD5</div><div style="font-size:12px">${escapeHtml(fw.md5) || ''}</div></div>
     </div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">更新内容</div><div style="white-space:pre-wrap">${escapeHtml(fw.changelog) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">已知问题</div><div style="white-space:pre-wrap">${escapeHtml(fw.knownIssues) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">升级方式</div><div style="white-space:pre-wrap">${escapeHtml(fw.upgradeMethod) || '-'}</div></div>
-    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(fw.notes) || '-'}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">更新内容</div><div style="white-space:pre-wrap">${escapeHtml(fw.changelog) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">已知问题</div><div style="white-space:pre-wrap">${escapeHtml(fw.knownIssues) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">升级方式</div><div style="white-space:pre-wrap">${escapeHtml(fw.upgradeMethod) || ''}</div></div>
+    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(fw.notes) || ''}</div></div>
   `);
 }
 
@@ -2963,9 +2963,9 @@ function renderFeatureSpecListView() {
   // 先渲染搜索栏（固定，不随搜索刷新）
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="fsSearchName" placeholder="名称..." value="${escapeHtml(featureSpecFilter.name)}">
-      <input type="text" id="fsSearchOwner" placeholder="负责人..." value="${escapeHtml(featureSpecFilter.owner)}">
-      <input type="text" id="fsSearchDesc" placeholder="描述..." value="${escapeHtml(featureSpecFilter.description)}">
+      <input type="text" id="fsSearchName" placeholder="名称" value="${escapeHtml(featureSpecFilter.name)}">
+      <input type="text" id="fsSearchOwner" placeholder="负责人" value="${escapeHtml(featureSpecFilter.owner)}">
+      <input type="text" id="fsSearchDesc" placeholder="描述" value="${escapeHtml(featureSpecFilter.description)}">
       <button class="btn btn-primary btn-sm" onclick="onFeatureSpecSearch()">搜索</button>
       <button class="btn btn-secondary btn-sm" onclick="featureSpecFilter = { name: '', owner: '', description: '' }; renderFeatureSpecListOnly();">重置</button>
     </div>
@@ -3026,9 +3026,9 @@ function renderFeatureSpecListOnly(list) {
             <tr>
               <td style="color:var(--text-secondary)">${idx + 1}</td>
               <td style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="previewFeatureSpec(${fs.id})">${escapeHtml(fs.name)}</td>
-              <td>${escapeHtml(fs.version) || '-'}</td>
-              <td>${escapeHtml(fs.owner) || '-'}</td>
-              <td title="${escapeHtml(fs.description)}" style="color:var(--text-secondary)">${escapeHtml(fs.description) || '-'}</td>
+              <td>${escapeHtml(fs.version) || ''}</td>
+              <td>${escapeHtml(fs.owner) || ''}</td>
+              <td title="${escapeHtml(fs.description)}" style="color:var(--text-secondary)">${escapeHtml(fs.description) || ''}</td>
               <td><span class="badge ${fs.status === 'online' ? 'badge-status-resolved' : 'badge-status-processing'}">${fs.status === 'online' ? '已上线' : '开发中'}</span></td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(fs.createdAt)}</td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(fs.updatedAt || fs.createdAt)}</td>
@@ -3058,17 +3058,17 @@ function previewFeatureSpec(id) {
   showModal(`
     <h3 style="margin-bottom:16px">${escapeHtml(fs.name)}</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">版本</div><div>${escapeHtml(fs.version) || '-'}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">负责人</div><div>${escapeHtml(fs.owner) || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">版本</div><div>${escapeHtml(fs.version) || ''}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">负责人</div><div>${escapeHtml(fs.owner) || ''}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">状态</div><div>${fs.status === 'online' ? '已上线' : '开发中'}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">更新时间</div><div>${formatDate(fs.updatedAt || fs.createdAt)}</div></div>
     </div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">功能描述</div><div style="white-space:pre-wrap">${escapeHtml(fs.description) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">输入输出</div><div style="white-space:pre-wrap">${escapeHtml(fs.io) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">业务规则</div><div style="white-space:pre-wrap">${escapeHtml(fs.rules) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">异常处理</div><div style="white-space:pre-wrap">${escapeHtml(fs.exceptions) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">验收标准</div><div style="white-space:pre-wrap">${escapeHtml(fs.acceptance) || '-'}</div></div>
-    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(fs.notes) || '-'}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">功能描述</div><div style="white-space:pre-wrap">${escapeHtml(fs.description) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">输入输出</div><div style="white-space:pre-wrap">${escapeHtml(fs.io) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">业务规则</div><div style="white-space:pre-wrap">${escapeHtml(fs.rules) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">异常处理</div><div style="white-space:pre-wrap">${escapeHtml(fs.exceptions) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">验收标准</div><div style="white-space:pre-wrap">${escapeHtml(fs.acceptance) || ''}</div></div>
+    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(fs.notes) || ''}</div></div>
   `);
 }
 
@@ -3499,10 +3499,10 @@ function renderUIReviewListView() {
   }
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="uiSearchId" placeholder="编号..." value="${escapeHtml(uiReviewFilter.id)}">
-      <input type="text" id="uiSearchPage" placeholder="页面/模块..." value="${escapeHtml(uiReviewFilter.page)}">
-      <input type="text" id="uiSearchIssue" placeholder="问题描述..." value="${escapeHtml(uiReviewFilter.issue)}">
-      <input type="text" id="uiSearchReviewer" placeholder="走查人..." value="${escapeHtml(uiReviewFilter.reviewer)}">
+      <input type="text" id="uiSearchId" placeholder="编号" value="${escapeHtml(uiReviewFilter.id)}">
+      <input type="text" id="uiSearchPage" placeholder="页面/模块" value="${escapeHtml(uiReviewFilter.page)}">
+      <input type="text" id="uiSearchIssue" placeholder="问题描述" value="${escapeHtml(uiReviewFilter.issue)}">
+      <input type="text" id="uiSearchReviewer" placeholder="走查人" value="${escapeHtml(uiReviewFilter.reviewer)}">
       <button class="btn btn-primary btn-sm" onclick="onUIReviewSearch()">搜索</button>
       <button class="btn btn-secondary btn-sm" onclick="uiReviewFilter = { id: '', page: '', issue: '', reviewer: '' }; renderUIReviewListView();">重置</button>
     </div>
@@ -3528,7 +3528,7 @@ function renderUIReviewListView() {
               <td title="${escapeHtml(ui.issue)}" style="color:var(--text-secondary)">${escapeHtml(ui.issue)}</td>
               <td><span class="badge ${sev.cls}">${sev.label}</span></td>
               <td><span class="badge ${ui.status === 'fixed' ? 'badge-status-resolved' : 'badge-status-new'}">${ui.status === 'fixed' ? '已修复' : ui.status === 'processing' ? '处理中' : '待处理'}</span></td>
-              <td>${escapeHtml(ui.reviewer) || '-'}</td>
+              <td>${escapeHtml(ui.reviewer) || ''}</td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(ui.createdAt)}</td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(ui.updatedAt || ui.createdAt)}</td>
               <td>
@@ -3567,12 +3567,12 @@ function previewUIReview(id) {
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">编号</div><div>UI-${String(ui.id).padStart(3,'0')}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">严重程度</div><div><span class="badge ${sev.cls}">${sev.label}</span></div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">状态</div><div>${ui.status === 'fixed' ? '已修复' : ui.status === 'processing' ? '处理中' : '待处理'}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">走查人</div><div>${escapeHtml(ui.reviewer) || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">走查人</div><div>${escapeHtml(ui.reviewer) || ''}</div></div>
     </div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">问题描述</div><div style="white-space:pre-wrap">${escapeHtml(ui.issue) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">设计稿要求</div><div style="white-space:pre-wrap">${escapeHtml(ui.designSpec) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">实际效果</div><div style="white-space:pre-wrap">${escapeHtml(ui.actual) || '-'}</div></div>
-    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(ui.notes) || '-'}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">问题描述</div><div style="white-space:pre-wrap">${escapeHtml(ui.issue) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">设计稿要求</div><div style="white-space:pre-wrap">${escapeHtml(ui.designSpec) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">实际效果</div><div style="white-space:pre-wrap">${escapeHtml(ui.actual) || ''}</div></div>
+    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(ui.notes) || ''}</div></div>
   `);
 }
 
@@ -3734,10 +3734,10 @@ function renderScriptListView() {
   }
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="scriptSearchName" placeholder="脚本名称..." value="${escapeHtml(scriptFilter.name || '')}">
-      <input type="text" id="scriptSearchModule" placeholder="关联模块..." value="${escapeHtml(scriptFilter.module || '')}">
-      <input type="text" id="scriptSearchOwner" placeholder="负责人..." value="${escapeHtml(scriptFilter.owner || '')}">
-      <input type="text" id="scriptSearchPath" placeholder="路径..." value="${escapeHtml(scriptFilter.path || '')}">
+      <input type="text" id="scriptSearchName" placeholder="脚本名称" value="${escapeHtml(scriptFilter.name || '')}">
+      <input type="text" id="scriptSearchModule" placeholder="关联模块" value="${escapeHtml(scriptFilter.module || '')}">
+      <input type="text" id="scriptSearchOwner" placeholder="负责人" value="${escapeHtml(scriptFilter.owner || '')}">
+      <input type="text" id="scriptSearchPath" placeholder="路径" value="${escapeHtml(scriptFilter.path || '')}">
       <button class="btn btn-primary btn-sm" onclick="onScriptSearch()">搜索</button>
       <button class="btn btn-secondary btn-sm" onclick="resetScriptSearch()">重置</button>
     </div>
@@ -3760,9 +3760,9 @@ function renderScriptListView() {
               <td style="color:var(--text-secondary)">${idx + 1}</td>
               <td style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="previewScript(${s.id})">${escapeHtml(s.name)}</td>
               <td><span class="badge ${tp.cls}">${tp.label}</span></td>
-              <td>${escapeHtml(s.module) || '-'}</td>
-              <td>${escapeHtml(s.owner) || '-'}</td>
-              <td title="${escapeHtml(s.path)}" style="font-family:monospace;font-size:12px;color:var(--accent);cursor:pointer" onclick="copyText('${escapeHtml(s.path)}')">${escapeHtml(s.path) || '-'}</td>
+              <td>${escapeHtml(s.module) || ''}</td>
+              <td>${escapeHtml(s.owner) || ''}</td>
+              <td title="${escapeHtml(s.path)}" style="font-family:monospace;font-size:12px;color:var(--accent);cursor:pointer" onclick="copyText('${escapeHtml(s.path)}')">${escapeHtml(s.path) || ''}</td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(s.createdAt)}</td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(s.updatedAt || s.createdAt)}</td>
               <td>
@@ -3799,13 +3799,13 @@ function previewScript(id) {
     <h3 style="margin-bottom:16px">${escapeHtml(s.name)}</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">类型</div><div><span class="badge ${tp.cls}">${tp.label}</span></div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">关联模块</div><div>${escapeHtml(s.module) || '-'}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">负责人</div><div>${escapeHtml(s.owner) || '-'}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">路径 / 链接</div><div style="font-family:monospace;font-size:12px">${escapeHtml(s.path) || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">关联模块</div><div>${escapeHtml(s.module) || ''}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">负责人</div><div>${escapeHtml(s.owner) || ''}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">路径 / 链接</div><div style="font-family:monospace;font-size:12px">${escapeHtml(s.path) || ''}</div></div>
     </div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">功能描述</div><div style="white-space:pre-wrap">${escapeHtml(s.description) || '-'}</div></div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">运行方式 / 依赖</div><div style="white-space:pre-wrap">${escapeHtml(s.usage) || '-'}</div></div>
-    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(s.notes) || '-'}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">功能描述</div><div style="white-space:pre-wrap">${escapeHtml(s.description) || ''}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">运行方式 / 依赖</div><div style="white-space:pre-wrap">${escapeHtml(s.usage) || ''}</div></div>
+    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(s.notes) || ''}</div></div>
   `);
 }
 
@@ -4326,8 +4326,8 @@ async function renderUserMgmtView() {
     document.getElementById('pageSubtitle').textContent = `共 ${list.length} 个账号`;
     content.innerHTML = `
       <div class="filter-bar">
-        <input type="text" id="userSearchUsername" placeholder="账号..." value="${escapeHtml(userFilter.username)}">
-        <input type="text" id="userSearchName" placeholder="姓名..." value="${escapeHtml(userFilter.name)}">
+        <input type="text" id="userSearchUsername" placeholder="账号" value="${escapeHtml(userFilter.username)}">
+        <input type="text" id="userSearchName" placeholder="姓名" value="${escapeHtml(userFilter.name)}">
         <select id="userSearchRole">
           <option value="">全部角色</option>
           <option value="admin" ${userFilter.role === 'admin' ? 'selected' : ''}>管理员</option>
@@ -4344,17 +4344,18 @@ async function renderUserMgmtView() {
         <button class="btn btn-secondary btn-sm" onclick="userFilter = { username: '', name: '', role: '', status: '' }; renderUserMgmtView();">重置</button>
       </div>
       <div class="table-wrap">
-        <table style="min-width:900px">
+        <table style="min-width:950px">
           <colgroup>
-            <col style="width:100px"><col style="width:100px"><col style="width:80px">
+            <col style="width:50px"><col style="width:100px"><col style="width:100px"><col style="width:80px">
             <col style="width:100px"><col style="width:80px"><col style="width:160px">
           </colgroup>
           <thead><tr>
-            <th>账号</th><th>姓名</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th>
+            <th style="white-space:nowrap">序号</th><th style="white-space:nowrap">账号</th><th style="white-space:nowrap">姓名</th><th style="white-space:nowrap">角色</th><th style="white-space:nowrap">状态</th><th style="white-space:nowrap">创建时间</th><th style="white-space:nowrap">操作</th>
           </tr></thead>
           <tbody>
-            ${list.map((u) => `
+            ${list.map((u, idx) => `
               <tr>
+                <td style="color:var(--text-secondary)">${idx + 1}</td>
                 <td style="font-weight:600">${escapeHtml(u.username)}</td>
                 <td>${escapeHtml(u.name)}</td>
                 <td><span class="badge ${(ROLE_MAP[u.role] || {}).cls || 'badge-type-other'}">${(ROLE_MAP[u.role] || {}).label || u.role}</span></td>
@@ -4674,7 +4675,7 @@ async function loadCompat() {
   updateAllBadges();
 }
 
-let compatFilter = { keyword: '' };
+let compatFilter = { model: '', brand: '', osVersion: '', tester: '' };
 
 function renderCompatListView() {
   document.getElementById('pageTitle').textContent = '系统适配';
@@ -4687,7 +4688,10 @@ function renderCompatListView() {
   // 先渲染搜索栏（固定，不随搜索刷新）
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="compatSearchInput" placeholder="搜索机型 / 品牌 / 系统版本 / 测试人..." value="${escapeHtml(compatFilter.keyword)}">
+      <input type="text" id="compatSearchModel" placeholder="机型" value="${escapeHtml(compatFilter.model || '')}">
+      <input type="text" id="compatSearchBrand" placeholder="品牌" value="${escapeHtml(compatFilter.brand || '')}">
+      <input type="text" id="compatSearchOsVersion" placeholder="系统版本" value="${escapeHtml(compatFilter.osVersion || '')}">
+      <input type="text" id="compatSearchTester" placeholder="测试人" value="${escapeHtml(compatFilter.tester || '')}">
       <button class="btn btn-primary btn-sm" onclick="onCompatSearch()">搜索</button>
       <button class="btn btn-secondary btn-sm" onclick="resetCompatSearch()">重置</button>
     </div>
@@ -4701,15 +4705,21 @@ function renderCompatListView() {
 // 单独渲染系统适配列表，搜索时只调用这个函数
 function renderCompatListOnly() {
   let list = currentCompatList;
-  if (compatFilter.keyword) {
-    const kw = compatFilter.keyword.toLowerCase();
-    list = list.filter(c =>
-      (c.model && c.model.toLowerCase().includes(kw)) ||
-      (c.brand && c.brand.toLowerCase().includes(kw)) ||
-      (c.osVersion && c.osVersion.toLowerCase().includes(kw)) ||
-      (c.tester && c.tester.toLowerCase().includes(kw)) ||
-      (c.issue && c.issue.toLowerCase().includes(kw))
-    );
+  if (compatFilter.model) {
+    const kw = compatFilter.model.toLowerCase();
+    list = list.filter(c => c.model && c.model.toLowerCase().includes(kw));
+  }
+  if (compatFilter.brand) {
+    const kw = compatFilter.brand.toLowerCase();
+    list = list.filter(c => c.brand && c.brand.toLowerCase().includes(kw));
+  }
+  if (compatFilter.osVersion) {
+    const kw = compatFilter.osVersion.toLowerCase();
+    list = list.filter(c => c.osVersion && c.osVersion.toLowerCase().includes(kw));
+  }
+  if (compatFilter.tester) {
+    const kw = compatFilter.tester.toLowerCase();
+    list = list.filter(c => c.tester && c.tester.toLowerCase().includes(kw));
   }
 
   const container = document.getElementById('compatListContainer');
@@ -4746,11 +4756,11 @@ function renderCompatListOnly() {
               <td style="color:var(--text-secondary)">${idx + 1}</td>
               <td style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="previewCompat(${c.id})">${escapeHtml(c.model)}</td>
               <td><span class="badge ${os.cls}">${os.label}</span></td>
-              <td>${escapeHtml(c.osVersion) || '-'}</td>
-              <td>${escapeHtml(c.brand) || '-'}</td>
+              <td>${escapeHtml(c.osVersion) || ''}</td>
+              <td>${escapeHtml(c.brand) || ''}</td>
               <td><span class="badge ${st.cls}">${st.label}</span></td>
-              <td title="${escapeHtml(c.issue)}" style="color:var(--text-secondary)">${escapeHtml(c.issue) || '-'}</td>
-              <td>${escapeHtml(c.tester) || '-'}</td>
+              <td title="${escapeHtml(c.issue)}" style="color:var(--text-secondary)">${escapeHtml(c.issue) || ''}</td>
+              <td>${escapeHtml(c.tester) || ''}</td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(c.createdAt)}</td>
               <td style="color:var(--text-secondary);white-space:nowrap">${formatDate(c.updatedAt || c.createdAt)}</td>
               <td>
@@ -4767,13 +4777,15 @@ function renderCompatListOnly() {
 }
 
 function onCompatSearch() {
-  compatFilter.keyword = document.getElementById('compatSearchInput').value;
+  compatFilter.model = document.getElementById('compatSearchModel').value;
+  compatFilter.brand = document.getElementById('compatSearchBrand').value;
+  compatFilter.osVersion = document.getElementById('compatSearchOsVersion').value;
+  compatFilter.tester = document.getElementById('compatSearchTester').value;
   renderCompatListOnly();
 }
 
 function resetCompatSearch() {
-  compatFilter.keyword = '';
-  document.getElementById('compatSearchInput').value = '';
+  compatFilter = { model: '', brand: '', osVersion: '', tester: '' };
   renderCompatListOnly();
 }
 
@@ -4786,13 +4798,13 @@ function previewCompat(id) {
     <h3 style="margin-bottom:16px">${escapeHtml(c.model)}</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">系统</div><div><span class="badge ${os.cls}">${os.label}</span></div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">系统版本</div><div>${escapeHtml(c.osVersion) || '-'}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">品牌</div><div>${escapeHtml(c.brand) || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">系统版本</div><div>${escapeHtml(c.osVersion) || ''}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">品牌</div><div>${escapeHtml(c.brand) || ''}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">适配状态</div><div><span class="badge ${st.cls}">${st.label}</span></div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">测试人</div><div>${escapeHtml(c.tester) || '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">测试人</div><div>${escapeHtml(c.tester) || ''}</div></div>
     </div>
-    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">问题描述</div><div style="white-space:pre-wrap">${escapeHtml(c.issue) || '-'}</div></div>
-    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(c.notes) || '-'}</div></div>
+    <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">问题描述</div><div style="white-space:pre-wrap">${escapeHtml(c.issue) || ''}</div></div>
+    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">备注</div><div style="white-space:pre-wrap">${escapeHtml(c.notes) || ''}</div></div>
   `);
 }
 
@@ -4898,6 +4910,16 @@ async function deleteCompat(id) {
 
 // ==================== 启动 ====================
 async function initApp() {
+  // 等待Supabase客户端初始化完成
+  let waitCount = 0;
+  while (!sb && waitCount < 50) {
+    await new Promise(r => setTimeout(r, 100));
+    waitCount++;
+  }
+  if (!sb) {
+    console.warn('Supabase客户端未初始化，数据可能加载失败');
+  }
+
   // 每个模块独立加载，一个出错不影响其他
   const modules = [
     ['bugs', loadBugs],
@@ -4912,8 +4934,13 @@ async function initApp() {
     try {
       await fn();
     } catch (e) {
-      console.error(`加载${name}失败:`, e);
-      toast(`${name}模块加载失败`, 'error');
+      console.error(`加载${name}失败，重试一次:`, e);
+      // 第一次加载失败，重试一次
+      try {
+        await fn();
+      } catch (e2) {
+        console.error(`${name}模块重试仍失败:`, e2);
+      }
     }
   }
   updateAllBadges();
