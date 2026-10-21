@@ -261,9 +261,9 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
 /* ===== 表格 ===== */
 .table-wrap {
   background: var(--card-bg); border-radius: var(--radius);
-  box-shadow: var(--shadow); border: 1px solid var(--border-light); overflow: hidden;
+  box-shadow: var(--shadow); border: 1px solid var(--border-light); overflow-x: auto; overflow-y: hidden;
 }
-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table { width: 100%; border-collapse: collapse; }
 thead { background: #fafbfc; }
 th {
   text-align: left; padding: 11px 14px; font-size: 12px; font-weight: 600;
@@ -848,13 +848,6 @@ tbody tr:last-child td {
         </div>
       </div>
     </nav>
-    <div class="sidebar-user">
-      <div class="user-avatar" id="userAvatar">A</div>
-      <div class="user-info">
-        <div class="user-name" id="userName">admin</div>
-        <div class="user-role" id="userRole">管理员</div>
-      </div>
-    </div>
   </aside>
 
   <main class="main">
@@ -873,6 +866,10 @@ tbody tr:last-child td {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
           </div>
           <div id="userDropdown" style="display:none;position:absolute;top:100%;right:0;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);min-width:160px;z-index:100;margin-top:4px">
+            <div onclick="showProfileModal(); toggleUserDropdown()" style="padding:12px 16px;cursor:pointer;font-size:14px;hover:background:#f8fafc">
+              个人设置
+            </div>
+            <div style="height:1px;background:#e5e7eb"></div>
             <div onclick="showChangePasswordModal(); toggleUserDropdown()" style="padding:12px 16px;cursor:pointer;font-size:14px;hover:background:#f8fafc">
               修改密码
             </div>
@@ -891,14 +888,14 @@ tbody tr:last-child td {
 <!-- 右下角悬浮快捷按钮 -->
 <div style="position:fixed;bottom:24px;right:24px;z-index:1000">
   <div id="quickActionsDropdown" style="display:none;position:absolute;bottom:70px;right:0;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:180px;overflow:hidden">
-    <div onclick="switchView('new'); toggleQuickActions()" style="padding:14px 20px;cursor:pointer;font-size:14px;hover:background:#f8fafc;display:flex;align-items:center;gap:10px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
-      新建缺陷
-    </div>
-    <div style="height:1px;background:#e5e7eb"></div>
     <div onclick="switchView('testcaseNew'); toggleQuickActions()" style="padding:14px 20px;cursor:pointer;font-size:14px;hover:background:#f8fafc;display:flex;align-items:center;gap:10px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       新建用例
+    </div>
+    <div style="height:1px;background:#e5e7eb"></div>
+    <div onclick="switchView('new'); toggleQuickActions()" style="padding:14px 20px;cursor:pointer;font-size:14px;hover:background:#f8fafc;display:flex;align-items:center;gap:10px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+      新建缺陷
     </div>
     <div style="height:1px;background:#e5e7eb"></div>
     <div onclick="switchView('firmwareNew'); toggleQuickActions()" style="padding:14px 20px;cursor:pointer;font-size:14px;hover:background:#f8fafc;display:flex;align-items:center;gap:10px">
@@ -1129,6 +1126,74 @@ document.addEventListener('click', function(e) {
   }
 });
 
+function showProfileModal() {
+  const contentHtml = `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:20px">
+      <div style="position:relative;cursor:pointer" onclick="document.getElementById('avatarUpload').click()">
+        <div id="previewAvatar" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:32px;font-weight:600;overflow:hidden">
+          ${currentUser ? currentUser.name.charAt(0) : 'A'}
+        </div>
+        <div style="position:absolute;bottom:0;right:0;background:#3b82f6;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px">+</div>
+      </div>
+      <input type="file" id="avatarUpload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:-12px">点击头像上传</div>
+      <div style="width:100%">
+        <label style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;display:block">显示名称</label>
+        <input class="form-input" id="profileName" value="${currentUser ? escapeHtml(currentUser.name) : ''}" style="width:100%">
+      </div>
+      <button class="btn btn-primary" onclick="saveProfile()" style="width:100%">保存</button>
+    </div>
+  `;
+  showModal('个人设置', contentHtml);
+}
+
+function uploadAvatar(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById('previewAvatar');
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+    window._newAvatar = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProfile() {
+  const newName = document.getElementById('profileName').value.trim();
+  if (!newName) {
+    toast('名称不能为空', 'error');
+    return;
+  }
+
+  try {
+    // 更新用户表
+    const { error } = await sb
+      .from('users')
+      .update({ name: newName })
+      .eq('id', currentUser.id);
+    if (error) throw error;
+
+    // 更新本地缓存
+    currentUser.name = newName;
+    sessionStorage.setItem('lens_current_user', JSON.stringify(currentUser));
+
+    // 更新右上角显示
+    document.getElementById('headerUserName').textContent = newName;
+    if (window._newAvatar) {
+      document.getElementById('headerUserAvatar').innerHTML = `<img src="${window._newAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else {
+      document.getElementById('headerUserAvatar').textContent = newName.charAt(0);
+    }
+
+    closeModal();
+    toast('个人设置已保存');
+  } catch (e) {
+    console.error('保存失败:', e);
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
 function toggleUserDropdown() {
   const dropdown = document.getElementById('userDropdown');
   dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
@@ -1137,7 +1202,9 @@ function toggleUserDropdown() {
 // 点击页面其他地方关闭下拉菜单
 document.addEventListener('click', function(e) {
   const dropdown = document.getElementById('userDropdown');
-  if (dropdown && dropdown.style.display === 'block' && !e.target.closest('#userDropdown')) {
+  // 排除点击触发下拉按钮本身的情况（因为onclick已经处理了toggle）
+  const triggerDiv = e.target.closest('div[onclick="toggleUserDropdown()"]');
+  if (dropdown && dropdown.style.display === 'block' && !e.target.closest('#userDropdown') && !triggerDiv) {
     dropdown.style.display = 'none';
   }
 });
@@ -1439,6 +1506,13 @@ function escapeHtml(s) {
 function switchView(view, param) {
   currentView = view;
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+
+  // 右下角快捷入口只在统计概览页面显示
+  const quickActionsDiv = document.querySelector('div[style*="position:fixed;bottom:24px;right:24px"]');
+  if (quickActionsDiv) {
+    quickActionsDiv.style.display = (view === 'stats') ? 'block' : 'none';
+  }
+
   if (view === 'list') renderListView();
   else if (view === 'new') renderNewForm();
   else if (view === 'stats') renderStatsView();
@@ -1518,7 +1592,12 @@ function onFilterChange() {
 
 function resetFilters() {
   filterState = { keyword: '', severity: '', type: '', status: '' };
-  renderBugsListView();
+  // 清空搜索栏的值，只刷新列表，不重新渲染整个页面
+  document.getElementById('filterKeyword').value = '';
+  document.getElementById('filterSeverity').value = '';
+  document.getElementById('filterType').value = '';
+  document.getElementById('filterStatus').value = '';
+  renderTable();
 }
 
 function getFilteredBugs() {
@@ -2012,9 +2091,7 @@ async function renderDetailView(id) {
 function renderStatsView() {
   document.getElementById('pageTitle').textContent = '工作台';
   document.getElementById('pageSubtitle').textContent = '全模块数据总览';
-  document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-primary" onclick="switchView('new')">+ 新建问题</button>
-  `;
+  document.getElementById('headerActions').innerHTML = '';
 
   const total = currentBugs.length;
   const countBy = (arr, field, val) => arr.filter(b => b[field] === val).length;
@@ -2075,25 +2152,30 @@ function renderStatsView() {
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px">
       <div class="form-card" style="padding:20px">
         <h3 style="font-size:14px;margin-bottom:16px;font-weight:600">缺陷严重程度分布</h3>
-        <div id="chartSeverity" style="height:260px"></div>
+        <div id="chartSeverity" style="height:380px"></div>
       </div>
       <div class="form-card" style="padding:20px">
         <h3 style="font-size:14px;margin-bottom:16px;font-weight:600">缺陷处理状态</h3>
-        <div id="chartStatus" style="height:260px"></div>
+        <div id="chartStatus" style="height:380px"></div>
       </div>
       <div class="form-card" style="padding:20px">
         <h3 style="font-size:14px;margin-bottom:16px;font-weight:600">缺陷类型分布</h3>
-        <div id="chartType" style="height:260px"></div>
+        <div id="chartType" style="height:380px"></div>
       </div>
     </div>
   `;
 
   // 渲染图表
   setTimeout(() => {
+    // 销毁之前的图表实例，防止内存泄漏
+    if (window._chart1) { window._chart1.dispose(); window._chart1 = null; }
+    if (window._chart2) { window._chart2.dispose(); window._chart2 = null; }
+    if (window._chart3) { window._chart3.dispose(); window._chart3 = null; }
+
     // 严重程度饼图
     if (severityData.length > 0) {
-      const chart1 = echarts.init(document.getElementById('chartSeverity'));
-      chart1.setOption({
+      window._chart1 = echarts.init(document.getElementById('chartSeverity'));
+      window._chart1.setOption({
         tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
         legend: { bottom: 0, textStyle: { fontSize: 12 } },
         series: [{
@@ -2104,15 +2186,14 @@ function renderStatsView() {
           data: severityData
         }]
       });
-      window.addEventListener('resize', () => chart1.resize());
     } else {
       document.getElementById('chartSeverity').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">暂无数据</div>';
     }
 
     // 状态饼图
     if (statusData.length > 0) {
-      const chart2 = echarts.init(document.getElementById('chartStatus'));
-      chart2.setOption({
+      window._chart2 = echarts.init(document.getElementById('chartStatus'));
+      window._chart2.setOption({
         tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
         legend: { bottom: 0, textStyle: { fontSize: 12 } },
         series: [{
@@ -2123,15 +2204,14 @@ function renderStatsView() {
           data: statusData
         }]
       });
-      window.addEventListener('resize', () => chart2.resize());
     } else {
       document.getElementById('chartStatus').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">暂无数据</div>';
     }
 
     // 类型柱状图
     if (typeData.length > 0) {
-      const chart3 = echarts.init(document.getElementById('chartType'));
-      chart3.setOption({
+      window._chart3 = echarts.init(document.getElementById('chartType'));
+      window._chart3.setOption({
         tooltip: { trigger: 'axis' },
         grid: { left: 40, right: 20, top: 20, bottom: 40 },
         xAxis: {
@@ -2147,7 +2227,6 @@ function renderStatsView() {
           barWidth: '40%'
         }]
       });
-      window.addEventListener('resize', () => chart3.resize());
     } else {
       document.getElementById('chartType').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:13px">暂无数据</div>';
     }
@@ -2591,18 +2670,19 @@ function renderFirmwareListView() {
       <button class="btn btn-secondary btn-sm" onclick="firmwareFilter = { version: '', hardware: '', author: '', changelog: '' }; renderFirmwareListView();">重置</button>
     </div>
     <div class="table-wrap">
-      <table style="min-width:1100px">
+      <table style="min-width:1150px">
         <colgroup>
-          <col style="width:120px"><col style="width:150px"><col style="width:120px">
+          <col style="width:60px"><col style="width:120px"><col style="width:150px"><col style="width:120px">
           <col style="width:100px"><col style="width:200px"><col style="width:100px"><col style="width:180px">
         </colgroup>
         <thead><tr>
-          <th>固件版本</th><th>硬件型号</th><th>发布日期</th>
-          <th>发布人</th><th>更新内容</th><th>文件大小</th><th>操作</th>
+          <th style="white-space:nowrap">序号</th><th style="white-space:nowrap">固件版本</th><th style="white-space:nowrap">硬件型号</th><th style="white-space:nowrap">发布日期</th>
+          <th style="white-space:nowrap">发布人</th><th style="white-space:nowrap">更新内容</th><th style="white-space:nowrap">文件大小</th><th style="white-space:nowrap">操作</th>
         </tr></thead>
         <tbody>
-          ${list.map(fw => `
+          ${list.map((fw, idx) => `
             <tr>
+              <td style="color:var(--text-secondary)">${idx + 1}</td>
               <td style="font-weight:600;color:var(--accent);cursor:pointer" onclick="previewFirmware(${fw.id})">${escapeHtml(fw.version)}</td>
               <td>${escapeHtml(fw.hardware) || '-'}</td>
               <td style="color:var(--text-secondary)">${fw.releaseDate || formatDate(fw.createdAt)}</td>
@@ -2846,7 +2926,7 @@ function onFeatureSpecSearch() {
   featureSpecFilter.name = document.getElementById('fsSearchName').value;
   featureSpecFilter.owner = document.getElementById('fsSearchOwner').value;
   featureSpecFilter.description = document.getElementById('fsSearchDesc').value;
-  renderFeatureSpecListView();
+  renderFeatureSpecListOnly();
 }
 
 function renderFeatureSpecListView() {
@@ -2871,32 +2951,67 @@ function renderFeatureSpecListView() {
     <button class="btn btn-primary" onclick="switchView('featurespecNew')">+ 新建</button>
   `;
   const content = document.getElementById('content');
-  if (list.length === 0) {
-    content.innerHTML = `<div class="form-card"><div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
-      <p>${currentFeatureSpecs.length === 0 ? '还没有记录，点击右上角"新建"开始编写' : '没有匹配的记录'}</p>
-    </div></div>`;
-    return;
-  }
+
+  // 先渲染搜索栏（固定，不随搜索刷新）
   content.innerHTML = `
     <div class="filter-bar">
       <input type="text" id="fsSearchName" placeholder="名称..." value="${escapeHtml(featureSpecFilter.name)}">
       <input type="text" id="fsSearchOwner" placeholder="负责人..." value="${escapeHtml(featureSpecFilter.owner)}">
       <input type="text" id="fsSearchDesc" placeholder="描述..." value="${escapeHtml(featureSpecFilter.description)}">
       <button class="btn btn-primary btn-sm" onclick="onFeatureSpecSearch()">搜索</button>
-      <button class="btn btn-secondary btn-sm" onclick="featureSpecFilter = { name: '', owner: '', description: '' }; renderFeatureSpecListView();">重置</button>
+      <button class="btn btn-secondary btn-sm" onclick="featureSpecFilter = { name: '', owner: '', description: '' }; renderFeatureSpecListOnly();">重置</button>
     </div>
+    <div id="featureSpecListContainer"></div>
+  `;
+
+  // 渲染列表部分（可以单独刷新）
+  renderFeatureSpecListOnly(list);
+}
+
+// 单独渲染功能规格书列表，搜索时只调用这个函数
+function renderFeatureSpecListOnly(list) {
+  if (!list) {
+    // 如果没传list参数，重新从currentFeatureSpecs过滤
+    list = currentFeatureSpecs;
+    if (featureSpecFilter.name) {
+      const kw = featureSpecFilter.name.toLowerCase();
+      list = list.filter(fs => fs.name && fs.name.toLowerCase().includes(kw));
+    }
+    if (featureSpecFilter.owner) {
+      const kw = featureSpecFilter.owner.toLowerCase();
+      list = list.filter(fs => fs.owner && fs.owner.toLowerCase().includes(kw));
+    }
+    if (featureSpecFilter.description) {
+      const kw = featureSpecFilter.description.toLowerCase();
+      list = list.filter(fs => fs.description && fs.description.toLowerCase().includes(kw));
+    }
+  }
+
+  const container = document.getElementById('featureSpecListContainer');
+  if (!container) return; // 防止页面已切换时出错
+
+  if (list.length === 0) {
+    container.innerHTML = `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+      <p>${currentFeatureSpecs.length === 0 ? '还没有记录，点击右上角"新建"开始编写' : '没有匹配的记录'}</p>
+    </div></div>`;
+    return;
+  }
+
+  document.getElementById('pageSubtitle').textContent = `共 ${list.length} 个功能模块`;
+
+  container.innerHTML = `
     <div class="table-wrap">
-      <table style="min-width:1050px">
+      <table style="min-width:1200px">
         <colgroup>
-          <col style="width:50px"><col style="width:150px"><col style="width:80px"><col style="width:90px">
-          <col style="width:150px"><col style="width:80px">
+          <col style="width:60px"><col style="width:150px"><col style="width:80px"><col style="width:90px">
+          <col style="width:180px"><col style="width:120px">
           <col style="width:150px"><col style="width:150px"><col style="width:180px">
         </colgroup>
         <thead><tr>
-          <th>序号</th><th>名称</th><th>版本</th><th>负责人</th>
-          <th>描述</th><th>状态</th>
-          <th>创建时间</th><th>更新时间</th><th>操作</th>
+          <th style="white-space:nowrap">序号</th><th style="white-space:nowrap">名称</th><th style="white-space:nowrap">版本</th><th style="white-space:nowrap">负责人</th>
+          <th style="white-space:nowrap">描述</th><th style="white-space:nowrap">状态</th>
+          <th style="white-space:nowrap">创建时间</th><th style="white-space:nowrap">更新时间</th><th style="white-space:nowrap">操作</th>
         </tr></thead>
         <tbody>
           ${list.map((fs, idx) => `
@@ -4529,11 +4644,32 @@ let compatFilter = { keyword: '' };
 
 function renderCompatListView() {
   document.getElementById('pageTitle').textContent = '系统适配';
-  
+
+  document.getElementById('headerActions').innerHTML = `
+    <button class="btn btn-primary" onclick="switchView('compatNew')">+ 新增适配</button>
+  `;
+  const content = document.getElementById('content');
+
+  // 先渲染搜索栏（固定，不随搜索刷新）
+  content.innerHTML = `
+    <div class="filter-bar">
+      <input type="text" id="compatSearchInput" placeholder="搜索机型 / 品牌 / 系统版本 / 测试人..." value="${escapeHtml(compatFilter.keyword)}">
+      <button class="btn btn-primary btn-sm" onclick="onCompatSearch()">搜索</button>
+      <button class="btn btn-secondary btn-sm" onclick="resetCompatSearch()">重置</button>
+    </div>
+    <div id="compatListContainer"></div>
+  `;
+
+  // 渲染列表部分（可以单独刷新）
+  renderCompatListOnly();
+}
+
+// 单独渲染系统适配列表，搜索时只调用这个函数
+function renderCompatListOnly() {
   let list = currentCompatList;
   if (compatFilter.keyword) {
     const kw = compatFilter.keyword.toLowerCase();
-    list = list.filter(c => 
+    list = list.filter(c =>
       (c.model && c.model.toLowerCase().includes(kw)) ||
       (c.brand && c.brand.toLowerCase().includes(kw)) ||
       (c.osVersion && c.osVersion.toLowerCase().includes(kw)) ||
@@ -4541,42 +4677,39 @@ function renderCompatListView() {
       (c.issue && c.issue.toLowerCase().includes(kw))
     );
   }
-  
+
+  const container = document.getElementById('compatListContainer');
+  if (!container) return; // 防止页面已切换时出错
+
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 个机型适配记录`;
-  document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-primary" onclick="switchView('compatNew')">+ 新增适配</button>
-  `;
-  const content = document.getElementById('content');
+
   if (list.length === 0) {
-    content.innerHTML = `<div class="form-card"><div class="empty-state">
+    container.innerHTML = `<div class="form-card"><div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
       <p>${currentCompatList.length === 0 ? '还没有系统适配记录，点击右上角"新增适配"开始' : '没有匹配的记录'}</p>
     </div></div>`;
     return;
   }
-  content.innerHTML = `
-    <div class="filter-bar">
-      <input type="text" id="compatSearchInput" placeholder="搜索机型 / 品牌 / 系统版本 / 测试人..." value="${escapeHtml(compatFilter.keyword)}">
-      <button class="btn btn-primary btn-sm" onclick="onCompatSearch()">搜索</button>
-      <button class="btn btn-secondary btn-sm" onclick="compatFilter.keyword = ''; renderCompatListView();">重置</button>
-    </div>
+
+  container.innerHTML = `
     <div class="table-wrap">
       <table style="min-width:1200px">
         <colgroup>
-          <col style="width:120px"><col style="width:100px"><col style="width:90px">
+          <col style="width:60px"><col style="width:120px"><col style="width:100px"><col style="width:90px">
           <col style="width:80px"><col style="width:110px"><col style="width:150px">
           <col style="width:70px"><col style="width:150px"><col style="width:150px"><col style="width:180px">
         </colgroup>
         <thead><tr>
-          <th>机型</th><th>系统</th><th>系统版本</th>
-          <th>品牌</th><th>适配状态</th><th>问题描述</th><th>测试人</th>
-          <th>创建时间</th><th>更新时间</th><th>操作</th>
+          <th style="white-space:nowrap">序号</th><th style="white-space:nowrap">机型</th><th style="white-space:nowrap">系统</th><th style="white-space:nowrap">系统版本</th>
+          <th style="white-space:nowrap">品牌</th><th style="white-space:nowrap">适配状态</th><th style="white-space:nowrap">问题描述</th><th style="white-space:nowrap">测试人</th>
+          <th style="white-space:nowrap">创建时间</th><th style="white-space:nowrap">更新时间</th><th style="white-space:nowrap">操作</th>
         </tr></thead>
         <tbody>
-          ${list.map(c => {
+          ${list.map((c, idx) => {
             const os = COMPAT_OS[c.os] || COMPAT_OS.other;
             const st = COMPAT_STATUS[c.status] || COMPAT_STATUS.compatible;
             return `<tr>
+              <td style="color:var(--text-secondary)">${idx + 1}</td>
               <td style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="previewCompat(${c.id})">${escapeHtml(c.model)}</td>
               <td><span class="badge ${os.cls}">${os.label}</span></td>
               <td>${escapeHtml(c.osVersion) || '-'}</td>
@@ -4601,7 +4734,13 @@ function renderCompatListView() {
 
 function onCompatSearch() {
   compatFilter.keyword = document.getElementById('compatSearchInput').value;
-  renderCompatListView();
+  renderCompatListOnly();
+}
+
+function resetCompatSearch() {
+  compatFilter.keyword = '';
+  document.getElementById('compatSearchInput').value = '';
+  renderCompatListOnly();
 }
 
 function previewCompat(id) {
@@ -4805,6 +4944,13 @@ if (checkLogin()) {
 } else {
   showLogin();
 }
+
+// 全局窗口大小变化监听器，只绑定一次，统一处理所有图表resize
+window.addEventListener('resize', () => {
+  if (window._chart1) window._chart1.resize();
+  if (window._chart2) window._chart2.resize();
+  if (window._chart3) window._chart3.resize();
+});
 </script>
 </body>
 </html>
