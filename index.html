@@ -261,7 +261,12 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
 /* ===== 表格 ===== */
 .table-wrap {
   background: var(--card-bg); border-radius: var(--radius);
-  box-shadow: var(--shadow); border: 1px solid var(--border-light); overflow-x: auto; overflow-y: hidden;
+  box-shadow: var(--shadow); border: 1px solid var(--border-light);
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 table { width: 100%; border-collapse: collapse; }
 thead { background: #fafbfc; }
@@ -497,7 +502,8 @@ tbody tr:last-child td { border-bottom: none; }
 /* 表格优化 */
 .table-wrap {
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--border);
 }
 table {
@@ -1187,7 +1193,7 @@ async function saveProfile() {
       document.getElementById('headerUserAvatar').textContent = newName.charAt(0);
     }
 
-    closeModal();
+    closeModal('previewModal');
     toast('个人设置已保存');
   } catch (e) {
     console.error('保存失败:', e);
@@ -3691,20 +3697,27 @@ async function loadScripts() {
   updateAllBadges();
 }
 
-let scriptFilter = { keyword: '' };
+let scriptFilter = { name: '', module: '', owner: '', path: '' };
 
 function renderScriptListView() {
   document.getElementById('pageTitle').textContent = '测试脚本 / 工程';
-  
+
   let list = currentScripts;
-  if (scriptFilter.keyword) {
-    const kw = scriptFilter.keyword.toLowerCase();
-    list = list.filter(s => 
-      (s.name && s.name.toLowerCase().includes(kw)) ||
-      (s.module && s.module.toLowerCase().includes(kw)) ||
-      (s.owner && s.owner.toLowerCase().includes(kw)) ||
-      (s.path && s.path.toLowerCase().includes(kw))
-    );
+  if (scriptFilter.name) {
+    const kw = scriptFilter.name.toLowerCase();
+    list = list.filter(s => s.name && s.name.toLowerCase().includes(kw));
+  }
+  if (scriptFilter.module) {
+    const kw = scriptFilter.module.toLowerCase();
+    list = list.filter(s => s.module && s.module.toLowerCase().includes(kw));
+  }
+  if (scriptFilter.owner) {
+    const kw = scriptFilter.owner.toLowerCase();
+    list = list.filter(s => s.owner && s.owner.toLowerCase().includes(kw));
+  }
+  if (scriptFilter.path) {
+    const kw = scriptFilter.path.toLowerCase();
+    list = list.filter(s => s.path && s.path.toLowerCase().includes(kw));
   }
   
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 个脚本或工程`;
@@ -3721,7 +3734,10 @@ function renderScriptListView() {
   }
   content.innerHTML = `
     <div class="filter-bar">
-      <input type="text" id="scriptSearchInput" placeholder="搜索脚本名称 / 模块 / 负责人 / 路径..." value="${escapeHtml(scriptFilter.keyword)}">
+      <input type="text" id="scriptSearchName" placeholder="脚本名称..." value="${escapeHtml(scriptFilter.name || '')}">
+      <input type="text" id="scriptSearchModule" placeholder="关联模块..." value="${escapeHtml(scriptFilter.module || '')}">
+      <input type="text" id="scriptSearchOwner" placeholder="负责人..." value="${escapeHtml(scriptFilter.owner || '')}">
+      <input type="text" id="scriptSearchPath" placeholder="路径..." value="${escapeHtml(scriptFilter.path || '')}">
       <button class="btn btn-primary btn-sm" onclick="onScriptSearch()">搜索</button>
       <button class="btn btn-secondary btn-sm" onclick="resetScriptSearch()">重置</button>
     </div>
@@ -3763,13 +3779,15 @@ function renderScriptListView() {
 }
 
 function onScriptSearch() {
-  scriptFilter.keyword = document.getElementById('scriptSearchInput').value;
+  scriptFilter.name = document.getElementById('scriptSearchName').value;
+  scriptFilter.module = document.getElementById('scriptSearchModule').value;
+  scriptFilter.owner = document.getElementById('scriptSearchOwner').value;
+  scriptFilter.path = document.getElementById('scriptSearchPath').value;
   renderScriptListView();
 }
 
 function resetScriptSearch() {
-  scriptFilter.keyword = '';
-  document.getElementById('scriptSearchInput').value = '';
+  scriptFilter = { name: '', module: '', owner: '', path: '' };
   renderScriptListView();
 }
 
