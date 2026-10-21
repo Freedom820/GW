@@ -1509,7 +1509,14 @@ function escapeHtml(s) {
 }
 
 // ==================== 视图切换 ====================
+let _isFirstLoad = true;
 function switchView(view, param) {
+  // 首次加载不push history，避免返回按钮跳到空白页
+  if (!_isFirstLoad) {
+    history.pushState({ view: view, param: param }, '', '#' + view);
+  }
+  _isFirstLoad = false;
+  
   currentView = view;
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
 
@@ -1537,6 +1544,52 @@ function switchView(view, param) {
   else if (view === 'usermgmt') renderUserMgmtView();
   else if (view === 'compat') renderCompatListView();
   else if (view === 'compatNew') renderCompatForm();
+  
+  // 在内容最顶部加返回按钮（首页除外）
+  if (view !== 'stats' && view !== 'list' && view !== 'testcases' && view !== 'firmware' && view !== 'featurespec' && view !== 'uireview' && view !== 'scripts' && view !== 'usermgmt' && view !== 'compat') {
+    const backBtn = document.createElement('div');
+    backBtn.style.cssText = 'margin-bottom:16px';
+    backBtn.innerHTML = '<button class="btn btn-secondary btn-sm" onclick="goBack()" style="display:inline-flex;align-items:center;gap:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>返回</button>';
+    const content = document.getElementById('content');
+    content.insertBefore(backBtn, content.firstChild);
+  }
+}
+
+// 浏览器前进后退监听
+window.addEventListener('popstate', function(e) {
+  if (e.state && e.state.view) {
+    currentView = e.state.view;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === e.state.view));
+    
+    const quickActionsDiv = document.querySelector('div[style*="position:fixed;bottom:24px;right:24px"]');
+    if (quickActionsDiv) {
+      quickActionsDiv.style.display = (e.state.view === 'stats') ? 'block' : 'none';
+    }
+    
+    if (e.state.view === 'list') renderListView();
+    else if (e.state.view === 'new') renderNewForm();
+    else if (e.state.view === 'stats') renderStatsView();
+    else if (e.state.view === 'detail') renderDetailView(e.state.param);
+    else if (e.state.view === 'testcases') renderTestCaseListView();
+    else if (e.state.view === 'testcaseNew') renderTestCaseForm();
+    else if (e.state.view === 'firmware') renderFirmwareListView();
+    else if (e.state.view === 'firmwareNew') renderFirmwareForm();
+    else if (e.state.view === 'featurespec') renderFeatureSpecListView();
+    else if (e.state.view === 'featurespecNew') renderFeatureSpecForm();
+    else if (e.state.view === 'uireview') renderUIReviewListView();
+    else if (e.state.view === 'uireviewNew') renderUIReviewForm();
+    else if (e.state.view === 'scripts') renderScriptListView();
+    else if (e.state.view === 'scriptNew') renderScriptForm();
+    else if (e.state.view === 'aiassistant') renderAIAssistantView();
+    else if (e.state.view === 'usermgmt') renderUserMgmtView();
+    else if (e.state.view === 'compat') renderCompatListView();
+    else if (e.state.view === 'compatNew') renderCompatForm();
+  }
+});
+
+// 返回上一页
+function goBack() {
+  history.back();
 }
 
 // ==================== 列表视图 ====================
@@ -2416,25 +2469,27 @@ function renderTestCaseListView() {
   
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 条用例`;
   document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-primary" onclick="switchView('testcaseNew')">+ 新建用例</button>
+    <button class="btn btn-primary" onclick="switchView('testcaseNew')">+ 新建</button>
   `;
   const content = document.getElementById('content');
-  if (list.length === 0) {
-    content.innerHTML = `<div class="form-card"><div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      <p>${currentTestCases.length === 0 ? '还没有测试用例，点击右上角"新建用例"开始编写' : '没有匹配的记录'}</p>
-    </div></div>`;
-    return;
-  }
-  content.innerHTML = `
+  const searchBar = `
     <div class="filter-bar">
       <input type="text" id="tcSearchId" placeholder="编号" value="${escapeHtml(testCaseFilter.id)}">
       <input type="text" id="tcSearchTitle" placeholder="用例标题" value="${escapeHtml(testCaseFilter.title)}">
       <input type="text" id="tcSearchModule" placeholder="所属模块" value="${escapeHtml(testCaseFilter.module)}">
       <input type="text" id="tcSearchExecutor" placeholder="执行人" value="${escapeHtml(testCaseFilter.executor)}">
       <button class="btn btn-primary btn-sm" onclick="onTestCaseSearch()">搜索</button>
-      <button class="btn btn-secondary btn-sm" onclick="testCaseFilter = { id: '', title: '', module: '', executor: '' }; renderTestCaseListView();">重置</button>
+      <button class="btn btn-secondary btn-sm" onclick="resetTestCaseSearch()">重置</button>
     </div>
+  `;
+  if (list.length === 0) {
+    content.innerHTML = searchBar + `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <p>${currentTestCases.length === 0 ? '还没有测试用例，点击右上角"新建用例"开始编写' : '没有匹配的记录'}</p>
+    </div></div>`;
+    return;
+  }
+  content.innerHTML = searchBar + `
     <div class="table-wrap">
       <table style="min-width:1150px">
         <colgroup>
@@ -2658,25 +2713,27 @@ function renderFirmwareListView() {
   
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 个固件版本`;
   document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-primary" onclick="switchView('firmwareNew')">+ 新建版本</button>
+    <button class="btn btn-primary" onclick="switchView('firmwareNew')">+ 新建</button>
   `;
   const content = document.getElementById('content');
-  if (list.length === 0) {
-    content.innerHTML = `<div class="form-card"><div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
-      <p>${currentFirmwareList.length === 0 ? '还没有固件版本记录，点击右上角"新建版本"开始' : '没有匹配的记录'}</p>
-    </div></div>`;
-    return;
-  }
-  content.innerHTML = `
+  const searchBar = `
     <div class="filter-bar">
       <input type="text" id="fwSearchVersion" placeholder="固件版本" value="${escapeHtml(firmwareFilter.version)}">
       <input type="text" id="fwSearchHardware" placeholder="硬件型号" value="${escapeHtml(firmwareFilter.hardware)}">
       <input type="text" id="fwSearchAuthor" placeholder="发布人" value="${escapeHtml(firmwareFilter.author)}">
       <input type="text" id="fwSearchChangelog" placeholder="更新内容" value="${escapeHtml(firmwareFilter.changelog)}">
       <button class="btn btn-primary btn-sm" onclick="onFirmwareSearch()">搜索</button>
-      <button class="btn btn-secondary btn-sm" onclick="firmwareFilter = { version: '', hardware: '', author: '', changelog: '' }; renderFirmwareListView();">重置</button>
+      <button class="btn btn-secondary btn-sm" onclick="resetFirmwareSearch()">重置</button>
     </div>
+  `;
+  if (list.length === 0) {
+    content.innerHTML = searchBar + `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+      <p>${currentFirmwareList.length === 0 ? '还没有固件版本记录，点击右上角"新建版本"开始' : '没有匹配的记录'}</p>
+    </div></div>`;
+    return;
+  }
+  content.innerHTML = searchBar + `
     <div class="table-wrap">
       <table style="min-width:1150px">
         <colgroup>
@@ -2696,7 +2753,7 @@ function renderFirmwareListView() {
               <td style="color:var(--text-secondary)">${fw.releaseDate || formatDate(fw.createdAt)}</td>
               <td>${escapeHtml(fw.author) || ''}</td>
               <td title="${escapeHtml(fw.changelog)}" style="color:var(--text-secondary)">${escapeHtml(fw.changelog) || ''}</td>
-              <td>${fw.fileSize ? formatSize(fw.fileSize) : '-'}</td>
+              <td>${fw.fileSize ? formatSize(fw.fileSize) : ''}</td>
               <td>
                 <button class="btn btn-sm btn-secondary" onclick="previewFirmware(${fw.id})">预览</button>
                 <button class="btn btn-sm btn-secondary" onclick="editFirmware(${fw.id})">编辑</button>
@@ -2726,7 +2783,7 @@ function previewFirmware(id) {
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">硬件型号</div><div>${escapeHtml(fw.hardware) || ''}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">发布日期</div><div>${fw.releaseDate || formatDate(fw.createdAt)}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">发布人</div><div>${escapeHtml(fw.author) || ''}</div></div>
-      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">文件大小</div><div>${fw.fileSize ? formatSize(fw.fileSize) : '-'}</div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">文件大小</div><div>${fw.fileSize ? formatSize(fw.fileSize) : ''}</div></div>
       <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">MD5</div><div style="font-size:12px">${escapeHtml(fw.md5) || ''}</div></div>
     </div>
     <div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">更新内容</div><div style="white-space:pre-wrap">${escapeHtml(fw.changelog) || ''}</div></div>
@@ -3210,9 +3267,9 @@ async function handleFileUpload(input, targetTextareaId) {
         const toolbar = document.createElement('div');
         toolbar.style.cssText = 'position:sticky;top:0;background:#f8fafc;padding:8px 12px;border-bottom:1px solid #e5e7eb;display:flex;gap:8px;align-items:center;margin-bottom:16px;z-index:10;border-radius:4px';
         toolbar.innerHTML = `
-          <button onclick="zoomPdf(0.2)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px">-</button>
+          <button onclick="zoomPdf(-0.2)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px">-</button>
           <span style="font-size:12px;font-weight:500">${Math.round(scale * 100)}%</span>
-          <button onclick="zoomPdf(-0.2)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px">+</button>
+          <button onclick="zoomPdf(0.2)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px">+</button>
           <button onclick="fitPdfWidth()" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;margin-left:8px">适应宽度</button>
           <span style="font-size:12px;color:#64748b;margin-left:auto">共 ${pdf.numPages} 页</span>
         `;
@@ -3240,7 +3297,7 @@ async function handleFileUpload(input, targetTextareaId) {
       
       // 初始渲染，默认适应宽度
       window._renderPdfPages = renderPdfPages;
-      await renderPdfPages(1.0);
+      await renderPdfPages(1.5);
       
       // 提取文本内容放到textarea（备用）
       let fullText = '';
@@ -3487,25 +3544,27 @@ function renderUIReviewListView() {
   
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 条走查记录`;
   document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-primary" onclick="switchView('uireviewNew')">+ 新建走查</button>
+    <button class="btn btn-primary" onclick="switchView('uireviewNew')">+ 新建</button>
   `;
   const content = document.getElementById('content');
-  if (list.length === 0) {
-    content.innerHTML = `<div class="form-card"><div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-      <p>${currentUIReviews.length === 0 ? '还没有 UI 走查记录，点击右上角"新建走查"开始' : '没有匹配的记录'}</p>
-    </div></div>`;
-    return;
-  }
-  content.innerHTML = `
+  const searchBar = `
     <div class="filter-bar">
       <input type="text" id="uiSearchId" placeholder="编号" value="${escapeHtml(uiReviewFilter.id)}">
       <input type="text" id="uiSearchPage" placeholder="页面/模块" value="${escapeHtml(uiReviewFilter.page)}">
       <input type="text" id="uiSearchIssue" placeholder="问题描述" value="${escapeHtml(uiReviewFilter.issue)}">
       <input type="text" id="uiSearchReviewer" placeholder="走查人" value="${escapeHtml(uiReviewFilter.reviewer)}">
       <button class="btn btn-primary btn-sm" onclick="onUIReviewSearch()">搜索</button>
-      <button class="btn btn-secondary btn-sm" onclick="uiReviewFilter = { id: '', page: '', issue: '', reviewer: '' }; renderUIReviewListView();">重置</button>
+      <button class="btn btn-secondary btn-sm" onclick="resetUIReviewSearch()">重置</button>
     </div>
+  `;
+  if (list.length === 0) {
+    content.innerHTML = searchBar + `<div class="form-card"><div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <p>${currentUIReviews.length === 0 ? '还没有 UI 走查记录，点击右上角"新建走查"开始' : '没有匹配的记录'}</p>
+    </div></div>`;
+    return;
+  }
+  content.innerHTML = searchBar + `
     <div class="table-wrap">
       <table style="min-width:1150px">
         <colgroup>
@@ -3542,11 +3601,6 @@ function renderUIReviewListView() {
       </table>
     </div>
   `;
-}
-
-function onUIReviewSearch() {
-  uiReviewFilter.keyword = document.getElementById('uiReviewSearchInput').value;
-  renderUIReviewListView();
 }
 
 function onUIReviewSearch() {
@@ -3722,7 +3776,7 @@ function renderScriptListView() {
   
   document.getElementById('pageSubtitle').textContent = `共 ${list.length} 个脚本或工程`;
   document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-primary" onclick="switchView('scriptNew')">+ 新建脚本</button>
+    <button class="btn btn-primary" onclick="switchView('scriptNew')">+ 新建</button>
   `;
   const content = document.getElementById('content');
   if (list.length === 0) {
@@ -3915,9 +3969,16 @@ function zoomPdf(delta) {
 }
 
 function fitPdfWidth() {
-  if (!window._renderPdfPages) return;
-  window._currentPdfScale = 1.0;
-  window._renderPdfPages(1.0);
+  if (!window._renderPdfPages || !window._currentPdf) return;
+  const container = document.getElementById(previewId) || document.querySelector('.modal-body');
+  if (!container) return;
+  const containerWidth = container.clientWidth - 40;
+  window._currentPdf.getPage(1).then(page => {
+    const viewport = page.getViewport({ scale: 1.0 });
+    const scale = containerWidth / viewport.width;
+    window._currentPdfScale = Math.max(0.5, Math.min(3.0, scale));
+    window._renderPdfPages(window._currentPdfScale);
+  });
 }
 
 function copyText(text) {
@@ -4292,7 +4353,7 @@ async function renderUserMgmtView() {
   document.getElementById('pageTitle').textContent = '用户管理';
   document.getElementById('pageSubtitle').textContent = '从云数据库读取所有账号';
   document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-primary" onclick="showAddUserModal()">+ 新建用户</button>
+    <button class="btn btn-primary" onclick="showAddUserModal()">+ 新建</button>
   `;
   const content = document.getElementById('content');
   content.innerHTML = '<div class="empty-state"><p>加载中...</p></div>';
@@ -4360,7 +4421,7 @@ async function renderUserMgmtView() {
                 <td>${escapeHtml(u.name)}</td>
                 <td><span class="badge ${(ROLE_MAP[u.role] || {}).cls || 'badge-type-other'}">${(ROLE_MAP[u.role] || {}).label || u.role}</span></td>
                 <td>${u.status === 'disabled' ? '<span class="badge badge-danger" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca">已禁用</span>' : '<span class="badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">已启用</span>'}</td>
-                <td style="color:var(--text-secondary)">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</td>
+                <td style="color:var(--text-secondary)">${u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}</td>
                 <td>
                   <button class="btn btn-sm btn-secondary" onclick="resetUserPassword(${u.id})">重置密码</button>
                   <button class="btn btn-sm btn-secondary" onclick="showPermissionModal(${u.id})">权限</button>
@@ -4681,7 +4742,7 @@ function renderCompatListView() {
   document.getElementById('pageTitle').textContent = '系统适配';
 
   document.getElementById('headerActions').innerHTML = `
-    <button class="btn btn-primary" onclick="switchView('compatNew')">+ 新增适配</button>
+    <button class="btn btn-primary" onclick="switchView('compatNew')">+ 新建</button>
   `;
   const content = document.getElementById('content');
 
