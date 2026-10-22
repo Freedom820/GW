@@ -3255,9 +3255,10 @@ async function handleFileUpload(input, targetTextareaId) {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       
-      // 渲染所有PDF页面到canvas，带缩放控制
-      window._currentPdfScale = 1.0;
+      // 渲染所有PDF页面到canvas，带缩放控制和高清支持
+      window._currentPdfScale = 2.0;
       window._currentPdf = pdf;
+      const dpr = window.devicePixelRatio || 1;
       
       const renderPdfPages = async (scale) => {
         const container = document.getElementById(previewId);
@@ -3267,9 +3268,9 @@ async function handleFileUpload(input, targetTextareaId) {
         const toolbar = document.createElement('div');
         toolbar.style.cssText = 'position:sticky;top:0;background:#f8fafc;padding:8px 12px;border-bottom:1px solid #e5e7eb;display:flex;gap:8px;align-items:center;margin-bottom:16px;z-index:10;border-radius:4px';
         toolbar.innerHTML = `
-          <button onclick="zoomPdf(-0.2)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px">-</button>
-          <span style="font-size:12px;font-weight:500">${Math.round(scale * 100)}%</span>
-          <button onclick="zoomPdf(0.2)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px">+</button>
+          <button onclick="zoomPdf(-0.3)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px">-</button>
+          <span style="font-size:12px;font-weight:500;min-width:40px;text-align:center">${Math.round(scale * 100)}%</span>
+          <button onclick="zoomPdf(0.3)" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px">+</button>
           <button onclick="fitPdfWidth()" style="padding:4px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:12px;margin-left:8px">适应宽度</button>
           <span style="font-size:12px;color:#64748b;margin-left:auto">共 ${pdf.numPages} 页</span>
         `;
@@ -3280,10 +3281,16 @@ async function handleFileUpload(input, targetTextareaId) {
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: scale });
           const canvas = document.createElement('canvas');
-          canvas.style.cssText = 'margin:0 auto 20px;display:block;box-shadow:0 2px 8px rgba(0,0,0,0.1)';
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
+          canvas.style.cssText = 'margin:0 auto 20px;display:block;box-shadow:0 2px 8px rgba(0,0,0,0.1);background:#fff';
+          
+          // 高清渲染：乘以devicePixelRatio
+          canvas.width = viewport.width * dpr;
+          canvas.height = viewport.height * dpr;
+          canvas.style.width = viewport.width + 'px';
+          canvas.style.height = viewport.height + 'px';
+          
           const ctx = canvas.getContext('2d');
+          ctx.scale(dpr, dpr);
           await page.render({ canvasContext: ctx, viewport: viewport }).promise;
           
           const pageLabel = document.createElement('div');
@@ -3295,9 +3302,9 @@ async function handleFileUpload(input, targetTextareaId) {
         }
       };
       
-      // 初始渲染，默认适应宽度
+      // 初始渲染，默认200%大小，文字更清晰
       window._renderPdfPages = renderPdfPages;
-      await renderPdfPages(1.5);
+      await renderPdfPages(2.0);
       
       // 提取文本内容放到textarea（备用）
       let fullText = '';
@@ -3970,9 +3977,9 @@ function zoomPdf(delta) {
 
 function fitPdfWidth() {
   if (!window._renderPdfPages || !window._currentPdf) return;
-  const container = document.getElementById(previewId) || document.querySelector('.modal-body');
+  const container = document.querySelector('.modal-body') || document.querySelector('.preview-area') || document.getElementById('content');
   if (!container) return;
-  const containerWidth = container.clientWidth - 40;
+  const containerWidth = container.clientWidth - 60;
   window._currentPdf.getPage(1).then(page => {
     const viewport = page.getViewport({ scale: 1.0 });
     const scale = containerWidth / viewport.width;
